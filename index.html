@@ -6,54 +6,23 @@
 <title>👁️</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#000;color:#00ff88;font-family:monospace;min-height:100vh;display:flex;justify-content:center;padding:20px 12px;overflow-x:hidden}
-.wrap{width:100%;max-width:480px;text-align:center}
-.eye{font-size:48px;margin:6px 0 14px}
-.box{border:1px solid #00ff88;border-radius:16px;padding:20px 16px;text-align:left;box-shadow:0 0 20px rgba(0,255,136,.2);margin-bottom:16px}
-.label{color:#00ff88;font-size:15px;margin-bottom:12px}
-input{width:100%;background:#000;border:1.5px solid #00ff88;border-radius:12px;color:#00ff88;padding:16px;font-size:20px;font-family:monospace;outline:none;margin-bottom:14px}
-button{width:100%;background:#00ff88;color:#000;border:none;border-radius:12px;padding:16px;font-size:20px;font-weight:900;cursor:pointer}
-button:disabled{opacity:.6}
-.bar-wrap{width:100%;height:14px;background:#022c1a;border-radius:20px;overflow:hidden;margin:18px 0 8px}
-#bar{height:100%;width:0%;background:#00ff88;transition:width .3s}
-#status{font-size:16px;min-height:22px}
-#result{width:100%;height:320px;border:1px solid #00ff88;border-radius:16px;position:relative;overflow:hidden;background:radial-gradient(circle at center, rgba(0,255,200,.15), transparent 70%);box-shadow:0 0 20px rgba(0,255,136,.2)}
+html,body{width:100%;height:100%;overflow:hidden;background:#000}
+body{color:#00ff88;font-family:monospace}
+#result{position:fixed;inset:0;width:100vw;height:100dvh;overflow:hidden;background:#000}
 #globe{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
 #globe:active{cursor:grabbing}
-.hint{position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:11px;color:#00ff8888;pointer-events:none}
-.btn-cam{margin-top:14px;background:#000;color:#00ff88;border:1.5px solid #00ff88;letter-spacing:2px}
-.btn-cam:active{background:#00ff88;color:#000}
-body.cam-mode{padding:0;overflow:hidden}
-body.cam-mode .wrap{max-width:100%}
-body.cam-mode .eye, body.cam-mode .box, body.cam-mode .btn-cam{display:none}
-body.cam-mode #result{position:fixed;inset:0;width:100vw;height:100dvh;border:none;border-radius:0;box-shadow:none;background:#000;z-index:10}
-body.cam-mode #result .hint{display:none}
-#staBtn{display:none}
-body.cam-mode #staBtn{display:block;position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:30;width:150px;background:#000;color:#00ff88;border:2px solid #00ff88;border-radius:30px;padding:14px;font-size:20px;font-weight:900;letter-spacing:4px;box-shadow:none}
+/* ÚNICO BOTÓN FLOTANTE - LUPA ARRIBA A LA IZQUIERDA */
+#searchBtn{position:fixed;top:16px;left:16px;z-index:30;width:52px;height:52px;border-radius:50%;background:rgba(0,0,0,0.6);color:#00ff88;border:2px solid #00ff88;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;box-shadow:0 0 16px rgba(0,255,136,.4);backdrop-filter:blur(4px)}
+#searchBtn:active{background:#00ff88;color:#000}
 </style>
 </head>
 <body>
-<div class="wrap">
-<div class="eye">👁️</div>
-
-<div class="box">
-<div class="label">&gt; Escribe cualquier nombre o número:</div>
-<input id="q" placeholder="" value="">
-<button id="btn" onclick="buscar()">🔍 BUSCAR</button>
-<div class="bar-wrap"><div id="bar"></div></div>
-<div id="status">&gt; Listo.</div>
-</div>
 
 <div id="result">
 <canvas id="globe"></canvas>
-<div class="hint">↔ Arrastra para girar el planeta 360°</div>
 </div>
 
-<button class="btn-cam" onclick="openCam()">📷 CAMERAT HK</button>
-
-</div>
-
-<button id="staBtn" onclick="closeCam()">STA</button>
+<button id="searchBtn" aria-label="Buscar">🔍</button>
 
 <script>
 let canvas=document.getElementById('globe');
@@ -62,12 +31,11 @@ let rotY=0.6, rotX=0.3;
 let targetY=0.6, targetX=0.3;
 let dragging=false, px=0, py=0;
 let zoom=1, targetZoom=1;
-// CORREGIDO: 2 horas = 7200 segundos por vuelta, con hora real del reloj
 let ORBIT_PERIOD_SEC = 7200;
 
 function resize(){
   let box=document.getElementById('result');
-  let w=box.clientWidth||320, h=box.clientHeight||320;
+  let w=box.clientWidth||window.innerWidth, h=box.clientHeight||window.innerHeight;
   canvas.width=w*2;
   canvas.height=h*2;
   canvas.style.width=w+'px';
@@ -150,15 +118,10 @@ function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   let cx=canvas.width/2, cy=canvas.height/2;
   let baseR=Math.min(canvas.width, canvas.height)*0.32;
-  let R=baseR*zoom;
-  if(document.body.classList.contains('cam-mode')) R=baseR*1.25*zoom;
+  let R=baseR*1.25*zoom;
 
-  // CORREGIDO: posición por hora real, no por tiempo desde que abriste la página
-  // Así si recargas, el satélite sigue donde debe estar
   let nowSec = Date.now()/1000;
-  // 1 vuelta cada 2 horas
   let satAngle1 = ((nowSec % ORBIT_PERIOD_SEC) / ORBIT_PERIOD_SEC) * Math.PI*2;
-  // Segundo satélite: también 2 horas, al contrario y con 180° de desfase para que no se crucen
   let satAngle2 = -satAngle1 + Math.PI;
 
   let grad=ctx.createRadialGradient(cx,cy,R*0.2,cx,cy,R*1.8);
@@ -290,7 +253,6 @@ function draw(){
       ctx.fillStyle='rgba(180,255,230,0.9)';
       ctx.beginPath(); ctx.arc(pts[i][0], pts[i][1], 2.8*zoom, 0, Math.PI*2); ctx.fill();
     }
-    // CORREGIDO: normaliza siempre a 0 - 2pi, nunca negativo
     let norm = ((satAngle % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
     let sat=orbitPoint(norm, cx, cy, R, orb.rx, orb.ry, orb.tilt);
     let idx=Math.floor((norm/(Math.PI*2))*N) % N;
@@ -355,31 +317,6 @@ canvas.addEventListener('pointermove', e=>{
 window.addEventListener('pointerup', e=>{ pointers.delete(e.pointerId); if(pointers.size===0) dragging=false; lastPinch=0; });
 window.addEventListener('pointercancel', e=>{ pointers.delete(e.pointerId); dragging=false; });
 canvas.addEventListener('wheel', e=>{ e.preventDefault(); targetZoom=Math.max(0.5, Math.min(3, targetZoom + (e.deltaY<0?0.2:-0.2))); }, {passive:false});
-
-function openCam(){
-  document.body.classList.add('cam-mode');
-  targetZoom=1; zoom=1;
-  setTimeout(resize, 50);
-}
-function closeCam(){
-  document.body.classList.remove('cam-mode');
-  targetZoom=1; zoom=1;
-  setTimeout(resize, 50);
-}
-
-let timer=null;
-function buscar(){
-  if(timer) return;
-  let btn=document.getElementById('btn');
-  let bar=document.getElementById('bar');
-  let status=document.getElementById('status');
-  btn.disabled=true; bar.style.width='0%'; status.textContent='> Buscando... 0%';
-  let p=0;
-  timer=setInterval(()=>{
-    p++; bar.style.width=p+'%'; status.textContent='> Buscando... '+p+'%';
-    if(p>=100){ clearInterval(timer); timer=null; status.textContent='> Listo.'; btn.disabled=false; }
-  },600);
-}
 </script>
 </body>
-</html>
+  </html>
