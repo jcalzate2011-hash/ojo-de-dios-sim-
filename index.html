@@ -3,72 +3,47 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OJO DE DIOS - SIMULADOR</title>
+<title>👁️</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#000;color:#00ff88;font-family:monospace;min-height:100vh;display:flex;justify-content:center;padding:20px 12px}
+body{background:#000;color:#00ff88;font-family:monospace;min-height:100vh;display:flex;justify-content:center;padding:20px 12px;overflow-x:hidden}
 .wrap{width:100%;max-width:480px;text-align:center}
-h1{font-size:52px;letter-spacing:4px;text-shadow:0 0 20px #00ff88;line-height:1}
-.sub{letter-spacing:5px;font-size:13px;color:#fff;margin:8px 0 20px}
-.box{border:1px solid #00ff88;border-radius:16px;padding:20px 16px;text-align:left;box-shadow:0 0 20px rgba(0,255,136,.2)}
+.eye{font-size:48px;margin:6px 0 14px}
+.box{border:1px solid #00ff88;border-radius:16px;padding:20px 16px;text-align:left;box-shadow:0 0 20px rgba(0,255,136,.2);margin-bottom:16px}
 .label{color:#00ff88;font-size:15px;margin-bottom:12px}
 input{width:100%;background:#000;border:1.5px solid #00ff88;border-radius:12px;color:#00ff88;padding:16px;font-size:20px;font-family:monospace;outline:none;margin-bottom:14px}
-input::placeholder{color:#00aa66}
 button{width:100%;background:#00ff88;color:#000;border:none;border-radius:12px;padding:16px;font-size:20px;font-weight:900;cursor:pointer}
-button:disabled{opacity:.6;cursor:wait}
+button:disabled{opacity:.6}
 .bar-wrap{width:100%;height:14px;background:#022c1a;border-radius:20px;overflow:hidden;margin:18px 0 8px}
 #bar{height:100%;width:0%;background:#00ff88;transition:width .3s}
 #status{font-size:16px;min-height:22px}
-#result{width:100%;min-height:280px;border:1.5px dashed #00aa66;border-radius:12px;margin-top:14px;padding:16px;color:#00ff88;font-size:16px;white-space:pre-wrap}
-.footer{color:#777;font-size:13px;margin-top:16px;line-height:1.5}
+#result{width:100%;height:300px;border:1px solid #00ff88;border-radius:16px;position:relative;overflow:hidden;background:radial-gradient(circle at center, rgba(0,255,200,.12), transparent 70%);box-shadow:0 0 20px rgba(0,255,136,.2)}
+#globe{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#globe:active{cursor:grabbing}
+.hint{position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:11px;color:#00ff8888;pointer-events:none}
 </style>
 </head>
 <body>
 <div class="wrap">
-<div style="font-size:40px">👁️</div>
-<h1>OJO DE DIOS</h1>
-<div class="sub">SIMULADOR - NO BUSCA DATOS REALES</div>
+<div class="eye">👁️</div>
 
 <div class="box">
 <div class="label">&gt; Escribe cualquier nombre o número para la demo:</div>
-<input id="q" placeholder="Demo 454" value="Demo 454">
+<input id="q" placeholder="" value="">
 <button id="btn" onclick="buscar()">🔍 BUSCAR</button>
-
 <div class="bar-wrap"><div id="bar"></div></div>
 <div id="status">&gt; Listo.</div>
-<div id="result"></div>
 </div>
 
-<div class="footer">Proyecto demo para TikTok / YouTube - No usa bases de datos reales.<br>Hecho para contenido.</div>
+<div id="result">
+<canvas id="globe"></canvas>
+<div class="hint">↔ Arrastra para girar el planeta</div>
+</div>
+
 </div>
 
 <script>
-let timer=null;
-function buscar(){
-  if(timer) return;
-  let btn=document.getElementById('btn');
-  let bar=document.getElementById('bar');
-  let status=document.getElementById('status');
-  let result=document.getElementById('result');
-  btn.disabled=true;
-  bar.style.width='0%';
-  result.textContent='';
-  status.textContent='> Buscando... 0%';
-  let p=0;
-  // 60 segundos = 100 pasos cada 600ms
-  timer=setInterval(()=>{
-    p++;
-    bar.style.width=p+'%';
-    status.textContent='> Buscando... '+p+'%';
-    if(p>=100){
-      clearInterval(timer);
-      timer=null;
-      status.textContent='> Listo.';
-      result.textContent=''; // queda grande pero vacío
-      btn.disabled=false;
-    }
-  },600);
-}
-</script>
-</body>
-</html>
+let scene, camera, renderer, planet, wire, points;
+let isDragging=false, prevX=0, prevY=0;
+let targetRotX=0
