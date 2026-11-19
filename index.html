@@ -62,7 +62,8 @@ let rotY=0.6, rotX=0.3;
 let targetY=0.6, targetX=0.3;
 let dragging=false, px=0, py=0;
 let zoom=1, targetZoom=1;
-let satT=0;
+// CORREGIDO: 2 horas = 7200 segundos por vuelta, con hora real del reloj
+let ORBIT_PERIOD_SEC = 7200;
 
 function resize(){
   let box=document.getElementById('result');
@@ -146,12 +147,19 @@ function orbitPoint(t, cx, cy, R, rxF, ryF, tilt){
 }
 
 function draw(){
-  try{
   ctx.clearRect(0,0,canvas.width,canvas.height);
   let cx=canvas.width/2, cy=canvas.height/2;
   let baseR=Math.min(canvas.width, canvas.height)*0.32;
   let R=baseR*zoom;
   if(document.body.classList.contains('cam-mode')) R=baseR*1.25*zoom;
+
+  // CORREGIDO: posición por hora real, no por tiempo desde que abriste la página
+  // Así si recargas, el satélite sigue donde debe estar
+  let nowSec = Date.now()/1000;
+  // 1 vuelta cada 2 horas
+  let satAngle1 = ((nowSec % ORBIT_PERIOD_SEC) / ORBIT_PERIOD_SEC) * Math.PI*2;
+  // Segundo satélite: también 2 horas, al contrario y con 180° de desfase para que no se crucen
+  let satAngle2 = -satAngle1 + Math.PI;
 
   let grad=ctx.createRadialGradient(cx,cy,R*0.2,cx,cy,R*1.8);
   grad.addColorStop(0,'rgba(0,255,200,0.25)');
@@ -255,7 +263,6 @@ function draw(){
     ctx.stroke();
   }
 
-  // ÓRBITA DEL SATÉLITE - ARREGLADA
   function drawOrbit(orb, satAngle, isMain){
     let N=24;
     let pts=[];
@@ -283,7 +290,7 @@ function draw(){
       ctx.fillStyle='rgba(180,255,230,0.9)';
       ctx.beginPath(); ctx.arc(pts[i][0], pts[i][1], 2.8*zoom, 0, Math.PI*2); ctx.fill();
     }
-    // Satélite - ángulo siempre normalizado 0 a 2pi para que no falle
+    // CORREGIDO: normaliza siempre a 0 - 2pi, nunca negativo
     let norm = ((satAngle % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
     let sat=orbitPoint(norm, cx, cy, R, orb.rx, orb.ry, orb.tilt);
     let idx=Math.floor((norm/(Math.PI*2))*N) % N;
@@ -302,15 +309,13 @@ function draw(){
     ctx.beginPath(); ctx.arc(sat[0],sat[1], 8*zoom, 0, Math.PI*2); ctx.stroke();
   }
 
-  drawOrbit({rx:1.70, ry:0.38, tilt:-0.4}, -satT*0.7, false);
-  drawOrbit({rx:1.45, ry:0.42, tilt:0.5}, satT, true);
+  drawOrbit({rx:1.70, ry:0.38, tilt:-0.4}, satAngle2, false);
+  drawOrbit({rx:1.45, ry:0.42, tilt:0.5}, satAngle1, true);
 
   ctx.strokeStyle='rgba(0,255,200,0.9)';
   ctx.lineWidth=2;
   ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke();
 
-  satT+=0.008;
-  }catch(e){}
   rotY += (targetY-rotY)*0.12;
   rotX += (targetX-rotX)*0.12;
   zoom += (targetZoom-zoom)*0.15;
