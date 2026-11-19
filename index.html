@@ -54,10 +54,11 @@ let dragging=false, px=0, py=0;
 let zoom=1, targetZoom=1;
 let satPos1=null, satPos2=null;
 let focusedSat=null;
+// CÁMARA QUE SIGUE AL SATÉLITE - ya no hace zoom en el centro
+let camOX=0, camOY=0, targetCamOX=0, targetCamOY=0;
 
-// TIEMPO REAL DE VERDAD - cada satélite a su periodo real
-let ISS_PERIOD_SEC = 93*60; // 93 minutos = 5580 seg
-let GOES_PERIOD_SEC = 24*60*60; // 24 horas = 86400 seg
+let ISS_PERIOD_SEC = 93*60;
+let GOES_PERIOD_SEC = 24*60*60;
 
 const SAT_INFO={
 iss:{
@@ -74,7 +75,6 @@ cells:[["Altitud","~35.786 km"],["Velocidad","~11.070 km/h"],["Periodo real","~2
 
 function showSat(key){
   focusedSat=key;
-  // ZOOM HACIA EL SATÉLITE cuando abres la ficha
   targetZoom=1.6;
   let s=SAT_INFO[key];
   document.getElementById('tabISS').classList.toggle('active', key==='iss');
@@ -87,6 +87,7 @@ function closePanel(){
   document.getElementById('infoPanel').style.display='none';
   focusedSat=null;
   targetZoom=1;
+  targetCamOX=0; targetCamOY=0;
 }
 document.getElementById('searchBtn').addEventListener('click', ()=>{
   let p=document.getElementById('infoPanel');
@@ -171,17 +172,33 @@ function orbitPoint(t, cx, cy, R, rxF, ryF, tilt){
   let yr=x*Math.sin(tilt)+y*Math.cos(tilt);
   return [cx+xr, cy+yr];
 }
+function orbitRel(t, R, rxF, ryF, tilt){
+  let p=orbitPoint(t, 0, 0, R, rxF, ryF, tilt);
+  return p;
+}
 
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  let cx=canvas.width/2, cy=canvas.height/2;
+  let baseCX=canvas.width/2, baseCY=canvas.height/2;
   let baseR=Math.min(canvas.width, canvas.height)*0.32;
   let R=baseR*1.25*zoom;
 
   let nowSec = Date.now()/1000;
-  // Cada satélite a su periodo real, con hora real
   let satAngle1 = ((nowSec % ISS_PERIOD_SEC) / ISS_PERIOD_SEC) * Math.PI*2;
   let satAngle2 = ((nowSec % GOES_PERIOD_SEC) / GOES_PERIOD_SEC) * Math.PI*2 + Math.PI;
+
+  // CORREGIDO: la cámara se mueve hacia el satélite, no hace zoom en el centro
+  if(focusedSat){
+    let rel = focusedSat==='iss' ? orbitRel(satAngle1, R, 1.45, 0.42, 0.5) : orbitRel(satAngle2, R, 1.70, 0.38, -0.4);
+    // Mueve el centro para que el satélite quede cerca del centro de la pantalla
+    // 0.55 = lo acerca sin sacar por completo al planeta
+    targetCamOX = -rel[0]*0.55;
+    targetCamOY = -rel[1]*0.55;
+  }
+  camOX += (targetCamOX-camOX)*0.08;
+  camOY += (targetCamOY-camOY)*0.08;
+
+  let cx=baseCX+camOX, cy=baseCY+camOY;
 
   let grad=ctx.createRadialGradient(cx,cy,R*0.2,cx,cy,R*1.8);
   grad.addColorStop(0,'rgba(0,255,200,0.25)');
@@ -329,7 +346,6 @@ function draw(){
     ctx.strokeStyle='rgba(0,255,200,0.9)';
     ctx.lineWidth=1.5;
     ctx.beginPath(); ctx.arc(sat[0],sat[1], 8*zoom, 0, Math.PI*2); ctx.stroke();
-    // RESALTADO CUANDO ESTÁ SELECCIONADO - anillo que muestra dónde está
     let isFocused = (isMain && focusedSat==='iss') || (!isMain && focusedSat==='goes');
     if(isFocused){
       let pulse = 14 + Math.sin(Date.now()/300)*5;
@@ -338,6 +354,11 @@ function draw(){
       ctx.beginPath(); ctx.arc(sat[0],sat[1], pulse*zoom, 0, Math.PI*2); ctx.stroke();
       ctx.strokeStyle='rgba(255,255,0,0.4)';
       ctx.beginPath(); ctx.arc(sat[0],sat[1], (pulse+10)*zoom, 0, Math.PI*2); ctx.stroke();
+      // Línea que te guía desde el centro hacia el satélite
+      ctx.strokeStyle='rgba(255,255,0,0.5)';
+      ctx.setLineDash([8,8]);
+      ctx.beginPath(); ctx.moveTo(baseCX, baseCY); ctx.lineTo(sat[0], sat[1]); ctx.stroke();
+      ctx.setLineDash([]);
     }
   }
 
@@ -381,6 +402,8 @@ canvas.addEventListener('pointermove', e=>{
     return;
   }
   if(!dragging) return;
+  // Si estás siguiendo un satélite, arrastrar cancela el seguimiento para que puedas mover libre
+  if(focusedSat){ focusedSat=null; targetCamOX=0; targetCamOY=0; targetZoom=1; }
   let dx=e.clientX-px, dy=e.clientY-py;
   targetY+=dx*0.012;
   targetX+=dy*0.012;
