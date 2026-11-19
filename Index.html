@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OJO DE DIOS - SIMULACIÓN</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#000;color:#00ff88;font-family:monospace;padding:16px}
+.aviso{background:#ffcc00;color:#000;padding:12px;border-radius:10px;font-weight:900;text-align:center;font-family:Arial}
+.logo{text-align:center;font-size:42px;margin:14px 0;text-shadow:0 0 15px #00ff88}
+.logo small{display:block;font-size:13px;color:#fff;letter-spacing:3px}
+.box{background:#0a0f0a;border:1px solid #00ff88;border-radius:14px;padding:16px;max-width:520px;margin:0 auto}
+input{width:100%;padding:14px;background:#000;border:1px solid #00ff88;color:#00ff88;border-radius:10px;font-size:16px;outline:none}
+.btn{width:100%;padding:14px;margin-top:10px;background:#00ff88;color:#000;border:none;border-radius:10px;font-weight:900;font-size:17px;cursor:pointer}
+.btn2{background:#111;color:#00ff88;border:1px solid #00ff88}
+.resultado{margin-top:14px;border:1px dashed #00ff88;border-radius:12px;padding:14px;display:none;white-space:pre-line;line-height:1.6}
+.foto{width:90px;height:90px;border-radius:50%;background:#00ff88;color:#000;display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:900;margin:0 auto 10px}
+.barra{height:8px;background:#222;border-radius:10px;overflow:hidden;margin:10px 0;display:none}
+.barra div{height:100%;width:0%;background:#00ff88}
+.footer{text-align:center;color:#888;font-size:12px;margin-top:14px}
+</style>
+</head>
+<body>
+<div class="aviso">⚠️ SIMULACIÓN - DATOS 100% FALSOS - SOLO PARA CONTENIDO / ENTRETENIMIENTO</div>
+<div class="logo">👁️ OJO DE DIOS<small>SIMULADOR - NO BUSCA DATOS REALES</small></div>
+<div class="box">
+<p>> Escribe cualquier nombre o número para la demo:</p>
+<input id="busqueda" placeholder="Ej: Juan Perez o 3001234567">
+<button class="btn" onclick="buscar()">🔍 BUSCAR [ SIMULADO ]</button>
+<button class="btn btn2" onclick="aleatorio()">🎲 EJEMPLO AL AZAR</button>
+<div class="barra" id="barra"><div id="progreso"></div></div>
+<p id="estado"></p>
+<div class="resultado" id="resultado"></div>
+</div>
+<p class="footer">Proyecto demo para TikTok / YouTube - No usa bases de datos reales.<br>Hecho para contenido.</p>
+<script>
+const nombres=["Alex Rivera","Sofia Torres","Mateo Gomez","Valeria Ruiz","Diego Castro","Camila Lopez","Juan Perez","Maria Garcia"];
+const ciudades=["Bogotá, Colombia","Medellín, Colombia","Cali, Colombia","Bucaramanga, Colombia","Pereira, Colombia"];
+const redes=["@alex_fake_99","@sofia.demo","@mateo_xd_21","@valen.simulada"];
+function generar(){let n=nombres[Math.floor(Math.random()*nombres.length)];let c=ciudades[Math.floor(Math.random()*ciudades.length)];let r=redes[Math.floor(Math.random()*redes.length)];let num="3"+Math.floor(100000000+Math.random()*899999999);let edad=Math.floor(16+Math.random()*25);return {n,c,r,num,edad};}
+function buscar(){let q=document.getElementById('busqueda').value.trim();if(!q){alert("Escribe algo para la demo");return;}animar(q);}
+function aleatorio(){document.getElementById('busqueda').value="Demo "+Math.floor(Math.random()*1000);animar("Demo");}
+function animar(q){let barra=document.getElementById('barra');let prog=document.getElementById('progreso');let est=document.getElementById('estado');let res=document.getElementById('resultado');barra.style.display="block";res.style.display="none";prog.style.width="0%";let p=0;let textos=["> Conectando a servidor SIMULADO... ","> Generando datos falsos... ","> Creando perfil demo... ","> Listo."];let i=0;let timer=setInterval(()=>{p+=20;prog.style.width=p+"%";est.innerText=textos[i]||"> Listo.";i++;if(p>=100){clearInterval(timer);let d=generar();res.style.display="block";res.innerHTML="<div class='foto'>👤</div><b>✅ PERFIL SIMULADO ENCONTRADO</b>\n\n👤 Nombre falso: "+d.n+"\n📍 Ciudad falsa: "+d.c+"\n🎂 Edad falsa: "+d.edad+"\n📱 Número falso: "+d.num+"\n📸 Instagram falso: "+r+"\n\n⚠️ Esto es una SIMULACIÓN.\nNo es información real de: "+q;}},400);}
+</script>
+</body>
+  </html>
