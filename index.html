@@ -62,6 +62,7 @@ let rotY=0.6, rotX=0.3;
 let targetY=0.6, targetX=0.3;
 let dragging=false, px=0, py=0;
 let zoom=1, targetZoom=1;
+let satT=0;
 
 function resize(){
   let box=document.getElementById('result');
@@ -133,6 +134,15 @@ function toXY(latDeg, lonDeg, cx, cy, R){
   return [cx+p[0]*R, cy+p[1]*R, p[2]];
 }
 
+// Punto sobre la órbita del satélite
+function orbitPoint(t, cx, cy, R, rxF, ryF, tilt){
+  let x=Math.cos(t)*rxF*R;
+  let y=Math.sin(t)*ryF*R;
+  let xr=x*Math.cos(tilt)-y*Math.sin(tilt);
+  let yr=x*Math.sin(tilt)+y*Math.cos(tilt);
+  return [cx+xr, cy+yr];
+}
+
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   let cx=canvas.width/2, cy=canvas.height/2;
@@ -140,7 +150,6 @@ function draw(){
   let R=baseR*zoom;
   if(document.body.classList.contains('cam-mode')) R=baseR*1.25*zoom;
 
-  // COLORES DE ANTES - verde holograma
   let grad=ctx.createRadialGradient(cx,cy,R*0.2,cx,cy,R*1.8);
   grad.addColorStop(0,'rgba(0,255,200,0.25)');
   grad.addColorStop(1,'rgba(0,255,200,0)');
@@ -154,7 +163,6 @@ function draw(){
   ctx.fillStyle=g2;
   ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.fill();
 
-  // CONTINENTES DE ANTES + PUNTOS CONECTADOS
   ctx.save();
   ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.clip();
 
@@ -176,7 +184,6 @@ function draw(){
     let alpha = isBack ? 0.10 : 0.22;
     let strokeA = isBack ? 0.3 : 0.95;
 
-    // Relleno y borde de antes
     ctx.fillStyle='rgba(0,255,140,'+alpha+')';
     ctx.strokeStyle='rgba(0,255,170,'+strokeA+')';
     ctx.lineWidth=1.4;
@@ -190,20 +197,16 @@ function draw(){
     }
     ctx.closePath(); ctx.fill(); ctx.stroke();
 
-    // NUEVO: PUNTOS QUE SE CONECTAN ENTRE SÍ DENTRO DE CADA CONTINENTE
     if(!isBack){
-      // Toma puntos repartidos por todo el continente
       let nodes=[];
       let step = Math.max(4, Math.floor(pts.length/12));
       for(let i=0;i<pts.length;i+=step){
         if(pts[i][2] > 0.15) nodes.push(pts[i]);
       }
-      // Centro del continente
       let ccx=0, ccy=0;
       nodes.forEach(n=>{ ccx+=n[0]; ccy+=n[1]; });
       if(nodes.length>0){ ccx/=nodes.length; ccy/=nodes.length; }
 
-      // 1. Líneas que conectan cada punto con el siguiente y con el centro
       ctx.strokeStyle='rgba(0,255,170,0.55)';
       ctx.lineWidth=1;
       ctx.beginPath();
@@ -212,21 +215,18 @@ function draw(){
         ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]);
         ctx.moveTo(a[0],a[1]); ctx.lineTo(ccx,ccy);
       }
-      // 2. Líneas cruzadas: cada punto con el que está 2 adelante, para que se vea red
       for(let i=0;i<nodes.length;i++){
         let a=nodes[i], b=nodes[(i+2)%nodes.length];
         ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]);
       }
       ctx.stroke();
 
-      // 3. Puntos brillantes
       for(let i=0;i<nodes.length;i++){
         ctx.fillStyle='rgba(200,255,230,0.95)';
         ctx.beginPath(); ctx.arc(nodes[i][0], nodes[i][1], 3.2*zoom, 0, Math.PI*2); ctx.fill();
         ctx.fillStyle='rgba(0,255,170,0.35)';
         ctx.beginPath(); ctx.arc(nodes[i][0], nodes[i][1], 6.5*zoom, 0, Math.PI*2); ctx.fill();
       }
-      // Punto central
       if(nodes.length>0){
         ctx.fillStyle='rgba(255,255,255,1)';
         ctx.beginPath(); ctx.arc(ccx,ccy, 3.5*zoom, 0, Math.PI*2); ctx.fill();
@@ -279,84 +279,7 @@ function draw(){
     }
   }
 
-  ctx.strokeStyle='rgba(0,255,200,0.5)';
-  ctx.lineWidth=2;
-  ctx.beginPath();
-  ctx.ellipse(cx,cy,R*1.45,R*0.4,0.5,0,Math.PI*2);
-  ctx.stroke();
-  ctx.strokeStyle='rgba(0,150,255,0.4)';
-  ctx.beginPath();
-  ctx.ellipse(cx,cy,R*1.7,R*0.35,-0.4,0,Math.PI*2);
-  ctx.stroke();
-
-  ctx.strokeStyle='rgba(0,255,200,0.9)';
-  ctx.lineWidth=2;
-  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke();
-
-  rotY += (targetY-rotY)*0.12;
-  rotX += (targetX-rotX)*0.12;
-  zoom += (targetZoom-zoom)*0.15;
-  requestAnimationFrame(draw);
-}
-draw();
-
-let pointers=new Map();
-let lastPinch=0;
-canvas.addEventListener('pointerdown', e=>{
-  pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
-  if(pointers.size===1){ dragging=true; px=e.clientX; py=e.clientY; }
-  if(pointers.size===2){
-    let pts=[...pointers.values()];
-    lastPinch=Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
-  }
-  canvas.setPointerCapture(e.pointerId);
-});
-canvas.addEventListener('pointermove', e=>{
-  if(!pointers.has(e.pointerId)) return;
-  pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
-  if(pointers.size===2){
-    let pts=[...pointers.values()];
-    let dist=Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
-    if(lastPinch>0){
-      targetZoom = Math.max(0.5, Math.min(3, targetZoom * (dist/lastPinch)));
-    }
-    lastPinch=dist;
-    return;
-  }
-  if(!dragging) return;
-  let dx=e.clientX-px, dy=e.clientY-py;
-  targetY+=dx*0.012;
-  targetX+=dy*0.012;
-  px=e.clientX; py=e.clientY;
-});
-window.addEventListener('pointerup', e=>{ pointers.delete(e.pointerId); if(pointers.size===0) dragging=false; lastPinch=0; });
-window.addEventListener('pointercancel', e=>{ pointers.delete(e.pointerId); dragging=false; });
-canvas.addEventListener('wheel', e=>{ e.preventDefault(); targetZoom=Math.max(0.5, Math.min(3, targetZoom + (e.deltaY<0?0.2:-0.2))); }, {passive:false});
-
-function openCam(){
-  document.body.classList.add('cam-mode');
-  targetZoom=1; zoom=1;
-  setTimeout(resize, 50);
-}
-function closeCam(){
-  document.body.classList.remove('cam-mode');
-  targetZoom=1; zoom=1;
-  setTimeout(resize, 50);
-}
-
-let timer=null;
-function buscar(){
-  if(timer) return;
-  let btn=document.getElementById('btn');
-  let bar=document.getElementById('bar');
-  let status=document.getElementById('status');
-  btn.disabled=true; bar.style.width='0%'; status.textContent='> Buscando... 0%';
-  let p=0;
-  timer=setInterval(()=>{
-    p++; bar.style.width=p+'%'; status.textContent='> Buscando... '+p+'%';
-    if(p>=100){ clearInterval(timer); timer=null; status.textContent='> Listo.'; btn.disabled=false; }
-  },600);
-}
-</script>
-</body>
-</html>
+  // NUEVO: ÓRBITA DEL SATÉLITE CON PUNTOS CONECTADOS POR TODA LA ÓRBITA
+  // Órbita 1 - la principal, inclinada
+  let orb1 = {rx:1.45, ry:0.42, tilt:0.5};
+  let orb2 = {rx:1.70, ry:0.38, tilt:-
