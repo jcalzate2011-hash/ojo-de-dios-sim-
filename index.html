@@ -11,19 +11,15 @@ body{color:#00ff88;font-family:monospace}
 #result{position:fixed;inset:0;width:100vw;height:100dvh;overflow:hidden;background:#000}
 #globe{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
 #globe:active{cursor:grabbing}
-/* LUPA MÁS REAL - metálica, seria, sin animación */
 #searchBtn{position:fixed;top:16px;left:16px;z-index:40;width:48px;height:48px;border-radius:50%;background:linear-gradient(145deg,#3a3f45,#1a1d21);border:1px solid #6b7280;border-bottom:1px solid #111;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.25)}
 #searchBtn:active{transform:scale(.97)}
-/* FICHA DE SATÉLITE - solo aparece cuando la pides */
-#infoPanel{display:none;position:fixed;left:12px;right:12px;bottom:12px;z-index:50;background:rgba(5,12,10,.96);border:1px solid #00ff88;border-radius:14px;padding:14px 14px 12px;box-shadow:0 10px 30px rgba(0,0,0,.7);max-height:46vh;overflow-y:auto}
+#infoPanel{display:none;position:fixed;left:12px;right:12px;bottom:12px;z-index:50;background:rgba(5,12,10,.96);border:1px solid #00ff88;border-radius:14px;padding:14px 14px 12px;box-shadow:0 10px 30px rgba(0,0,0,.7)}
 #infoPanel h2{font-size:15px;color:#fff;margin-bottom:2px}
 #infoPanel .sub{font-size:11px;color:#9be8c8;margin-bottom:10px}
-#infoPanel .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+#infoPanel .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 #infoPanel .cell{background:#0a1f18;border:1px solid #143d2c;border-radius:10px;padding:8px}
 #infoPanel .cell b{display:block;font-size:10px;color:#7dd9ae;font-weight:400}
 #infoPanel .cell span{font-size:13px;color:#fff}
-#infoPanel p{font-size:12px;line-height:1.5;color:#c8f5dd}
-#infoPanel .src{font-size:10px;color:#7a8a82;margin-top:8px}
 #infoTabs{display:flex;gap:8px;margin-bottom:12px}
 #infoTabs button{flex:1;background:#0a1f18;color:#00ff88;border:1px solid #00ff88;border-radius:20px;padding:9px;font-family:monospace;font-size:12px;cursor:pointer}
 #infoTabs button.active{background:#00ff88;color:#000;font-weight:900}
@@ -56,35 +52,42 @@ let rotY=0.6, rotX=0.3;
 let targetY=0.6, targetX=0.3;
 let dragging=false, px=0, py=0;
 let zoom=1, targetZoom=1;
-let ORBIT_PERIOD_SEC = 7200;
 let satPos1=null, satPos2=null;
+let focusedSat=null;
+
+// TIEMPO REAL DE VERDAD - cada satélite a su periodo real
+let ISS_PERIOD_SEC = 93*60; // 93 minutos = 5580 seg
+let GOES_PERIOD_SEC = 24*60*60; // 24 horas = 86400 seg
 
 const SAT_INFO={
 iss:{
 name:"ISS — Estación Espacial Internacional",
 sub:"NASA / Roscosmos / ESA / JAXA / CSA • NORAD 25544",
-cells:[["Altitud","~420 km"],["Velocidad","~27.600 km/h"],["Periodo real","~93 min"],["Órbitas por día","~15.5"]],
-desc:"Laboratorio de investigación en órbita baja, habitado de forma continua desde noviembre de 2000. Sirve para ciencia en microgravedad y estudio del entorno espacial. Datos públicos de NASA.",
-src:"Fuente: Datos públicos NASA / NOAA. Visualización en este holograma: 1 vuelta cada 2 h solo para visualización, no es su periodo real."
+cells:[["Altitud","~420 km"],["Velocidad","~27.600 km/h"],["Periodo real","~93 min"],["Órbitas por día","~15.5"]]
 },
 goes:{
 name:"GOES-16",
 sub:"NASA / NOAA • NORAD 41866 • Lanzado 19 nov 2016",
-cells:[["Altitud","~35.786 km"],["Velocidad","~11.070 km/h"],["Periodo real","~24 horas"],["Órbita","Geoestacionaria"]],
-desc:"Satélite meteorológico geoestacionario. Lleva la cámara ABI con 16 bandas espectrales y el detector de rayos GLM, el primero operativo en órbita geoestacionaria. Hoy es respaldo de la constelación GOES.",
-src:"Fuente: Datos públicos NASA / NOAA. Visualización en este holograma: 1 vuelta cada 2 h solo para visualización, no es su periodo real."
+cells:[["Altitud","~35.786 km"],["Velocidad","~11.070 km/h"],["Periodo real","~24 horas"],["Órbita","Geoestacionaria"]]
 }
 };
 
 function showSat(key){
+  focusedSat=key;
+  // ZOOM HACIA EL SATÉLITE cuando abres la ficha
+  targetZoom=1.6;
   let s=SAT_INFO[key];
   document.getElementById('tabISS').classList.toggle('active', key==='iss');
   document.getElementById('tabGOES').classList.toggle('active', key==='goes');
   let cells=s.cells.map(c=>'<div class="cell"><b>'+c[0]+'</b><span>'+c[1]+'</span></div>').join('');
-  document.getElementById('infoContent').innerHTML='<h2>'+s.name+'</h2><div class="sub">'+s.sub+'</div><div class="grid">'+cells+'</div><p>'+s.desc+'</p><div class="src">'+s.src+'</div>';
+  document.getElementById('infoContent').innerHTML='<h2>'+s.name+'</h2><div class="sub">'+s.sub+'</div><div class="grid">'+cells+'</div>';
   document.getElementById('infoPanel').style.display='block';
 }
-function closePanel(){ document.getElementById('infoPanel').style.display='none'; }
+function closePanel(){
+  document.getElementById('infoPanel').style.display='none';
+  focusedSat=null;
+  targetZoom=1;
+}
 document.getElementById('searchBtn').addEventListener('click', ()=>{
   let p=document.getElementById('infoPanel');
   if(p.style.display==='block') closePanel(); else showSat('iss');
@@ -176,8 +179,9 @@ function draw(){
   let R=baseR*1.25*zoom;
 
   let nowSec = Date.now()/1000;
-  let satAngle1 = ((nowSec % ORBIT_PERIOD_SEC) / ORBIT_PERIOD_SEC) * Math.PI*2;
-  let satAngle2 = -satAngle1 + Math.PI;
+  // Cada satélite a su periodo real, con hora real
+  let satAngle1 = ((nowSec % ISS_PERIOD_SEC) / ISS_PERIOD_SEC) * Math.PI*2;
+  let satAngle2 = ((nowSec % GOES_PERIOD_SEC) / GOES_PERIOD_SEC) * Math.PI*2 + Math.PI;
 
   let grad=ctx.createRadialGradient(cx,cy,R*0.2,cx,cy,R*1.8);
   grad.addColorStop(0,'rgba(0,255,200,0.25)');
@@ -325,6 +329,16 @@ function draw(){
     ctx.strokeStyle='rgba(0,255,200,0.9)';
     ctx.lineWidth=1.5;
     ctx.beginPath(); ctx.arc(sat[0],sat[1], 8*zoom, 0, Math.PI*2); ctx.stroke();
+    // RESALTADO CUANDO ESTÁ SELECCIONADO - anillo que muestra dónde está
+    let isFocused = (isMain && focusedSat==='iss') || (!isMain && focusedSat==='goes');
+    if(isFocused){
+      let pulse = 14 + Math.sin(Date.now()/300)*5;
+      ctx.strokeStyle='rgba(255,255,0,0.9)';
+      ctx.lineWidth=2;
+      ctx.beginPath(); ctx.arc(sat[0],sat[1], pulse*zoom, 0, Math.PI*2); ctx.stroke();
+      ctx.strokeStyle='rgba(255,255,0,0.4)';
+      ctx.beginPath(); ctx.arc(sat[0],sat[1], (pulse+10)*zoom, 0, Math.PI*2); ctx.stroke();
+    }
   }
 
   drawOrbit({rx:1.70, ry:0.38, tilt:-0.4}, satAngle2, false);
@@ -373,7 +387,6 @@ canvas.addEventListener('pointermove', e=>{
   px=e.clientX; py=e.clientY;
 });
 window.addEventListener('pointerup', e=>{
-  // Tap corto sin arrastrar = tocar satélite
   if(downPos && Date.now()-downTime<300 && Math.hypot(e.clientX-downPos.x, e.clientY-downPos.y)<12){
     let rect=canvas.getBoundingClientRect();
     let x=(e.clientX-rect.left)*2, y=(e.clientY-rect.top)*2;
@@ -386,4 +399,4 @@ window.addEventListener('pointercancel', e=>{ pointers.delete(e.pointerId); drag
 canvas.addEventListener('wheel', e=>{ e.preventDefault(); targetZoom=Math.max(0.5, Math.min(3, targetZoom + (e.deltaY<0?0.2:-0.2))); }, {passive:false});
 </script>
 </body>
-</html>
+  </html>
