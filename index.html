@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>👁️</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -21,6 +21,22 @@ button:disabled{opacity:.6}
 #globe{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
 #globe:active{cursor:grabbing}
 .hint{position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:11px;color:#00ff8888;pointer-events:none}
+.btn-cam{margin-top:14px;background:#000;color:#00ff88;border:1.5px solid #00ff88;letter-spacing:2px}
+.btn-cam:active{background:#00ff88;color:#000}
+
+/* MODO CAMARA - PANTALLA COMPLETA */
+body.cam-mode{padding:0;overflow:hidden}
+body.cam-mode .wrap{max-width:100%}
+body.cam-mode .eye, body.cam-mode .box, body.cam-mode .btn-cam{display:none}
+body.cam-mode #result{position:fixed;inset:0;width:100vw;height:100dvh;border:none;border-radius:0;box-shadow:none;background:#000;z-index:10}
+body.cam-mode #result .hint{display:none}
+#staBtn{display:none}
+body.cam-mode #staBtn{display:block;position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:30;width:150px;background:#00ff88;color:#000;border:2px solid #00ff88;border-radius:30px;padding:14px;font-size:20px;font-weight:900;letter-spacing:4px;box-shadow:0 0 20px #00ff88}
+#zoomControls{display:none}
+body.cam-mode #zoomControls{display:flex;position:fixed;right:14px;top:50%;transform:translateY(-50%);flex-direction:column;gap:10px;z-index:30}
+#zoomControls button{width:50px;height:50px;padding:0;border-radius:50%;background:rgba(0,0,0,.7);color:#00ff88;border:1.5px solid #00ff88;font-size:24px}
+#zoomLabel{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:30;color:#00ff88;font-size:14px;letter-spacing:2px;background:rgba(0,0,0,.6);padding:6px 14px;border-radius:20px;border:1px solid #00ff88;display:none}
+body.cam-mode #zoomLabel{display:block}
 </style>
 </head>
 <body>
@@ -40,7 +56,17 @@ button:disabled{opacity:.6}
 <div class="hint">↔ Arrastra para girar el planeta 360°</div>
 </div>
 
+<button class="btn-cam" onclick="openCam()">📷 CAMERAT HK</button>
+
 </div>
+
+<!-- SOLO EN MODO CAMARA -->
+<div id="zoomLabel">ZOOM 1.0x</div>
+<div id="zoomControls">
+<button onclick="zoomIn()">+</button>
+<button onclick="zoomOut()">-</button>
+</div>
+<button id="staBtn" onclick="closeCam()">STA</button>
 
 <script>
 let canvas=document.getElementById('globe');
@@ -48,6 +74,7 @@ let ctx=canvas.getContext('2d');
 let rotY=0.6, rotX=0.3;
 let targetY=0.6, targetX=0.3;
 let dragging=false, px=0, py=0;
+let zoom=1, targetZoom=1;
 
 function resize(){
   let box=document.getElementById('result');
@@ -57,7 +84,6 @@ function resize(){
 window.addEventListener('resize', resize);
 resize();
 
-// Rota un punto 3D en X y luego en Y - así da 360° para todos lados
 function rotate3D(x,y,z){
   let cx=Math.cos(rotX), sx=Math.sin(rotX);
   let y1=y*cx - z*sx;
@@ -71,7 +97,10 @@ function rotate3D(x,y,z){
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   let cx=canvas.width/2, cy=canvas.height/2;
-  let R=Math.min(canvas.width, canvas.height)*0.32;
+  // En modo cámara el planeta es más grande y enfocado
+  let baseR=Math.min(canvas.width, canvas.height)*0.32;
+  let R=baseR*zoom;
+  if(document.body.classList.contains('cam-mode')) R=baseR*1.25*zoom;
 
   let grad=ctx.createRadialGradient(cx,cy,R*0.2,cx,cy,R*1.8);
   grad.addColorStop(0,'rgba(0,255,200,0.25)');
@@ -79,7 +108,6 @@ function draw(){
   ctx.fillStyle=grad;
   ctx.fillRect(0,0,canvas.width,canvas.height);
 
-  // Esfera azul-verde transparentosa
   let g2=ctx.createRadialGradient(cx-R*0.3,cy-R*0.3,R*0.1,cx,cy,R);
   g2.addColorStop(0,'rgba(0,255,180,0.55)');
   g2.addColorStop(0.5,'rgba(0,180,255,0.30)');
@@ -87,7 +115,6 @@ function draw(){
   ctx.fillStyle=g2;
   ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.fill();
 
-  // Paralelos 360°
   ctx.strokeStyle='rgba(0,255,170,0.65)';
   ctx.lineWidth=1.5;
   for(let lat=-60; lat<=60; lat+=30){
@@ -104,8 +131,6 @@ function draw(){
     }
     ctx.stroke();
   }
-
-  // Meridianos 360°
   for(let m=0;m<12;m++){
     let lon=m*Math.PI/6;
     ctx.beginPath();
@@ -119,7 +144,6 @@ function draw(){
       if(a===-90) ctx.moveTo(sx2,sy2); else ctx.lineTo(sx2,sy2);
     }
     ctx.stroke();
-    // La otra mitad del meridiano para que cierre el círculo completo
     ctx.beginPath();
     for(let a=-90;a<=90;a+=6){
       let la=a*Math.PI/180;
@@ -134,7 +158,6 @@ function draw(){
     ctx.stroke();
   }
 
-  // Puntos brillantes - 3D real
   for(let i=0;i<120;i++){
     let lat=(i*137.5 % 180 - 90)*Math.PI/180;
     let lon=(i*89.7 % 360)*Math.PI/180;
@@ -144,11 +167,11 @@ function draw(){
     let p=rotate3D(x,y,z);
     if(p[2] > -0.3){
       ctx.fillStyle='rgba(150,255,210,0.9)';
-      ctx.beginPath(); ctx.arc(cx+p[0]*R, cy+p[1]*R, 3, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx+p[0]*R, cy+p[1]*R, 3*zoom, 0, Math.PI*2); ctx.fill();
     }
   }
 
-  // Anillos
+  // Anillos - en modo cámara más centrados
   ctx.strokeStyle='rgba(0,255,200,0.5)';
   ctx.lineWidth=2;
   ctx.beginPath();
@@ -159,28 +182,72 @@ function draw(){
   ctx.ellipse(cx,cy,R*1.7,R*0.35,-0.4,0,Math.PI*2);
   ctx.stroke();
 
-  // Borde
   ctx.strokeStyle='rgba(0,255,200,0.9)';
   ctx.lineWidth=2;
   ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke();
 
   rotY += (targetY-rotY)*0.12;
   rotX += (targetX-rotX)*0.12;
+  zoom += (targetZoom-zoom)*0.15;
   requestAnimationFrame(draw);
 }
 draw();
 
-// SIN LÍMITE - 360° PARA TODOS LADOS
-canvas.addEventListener('pointerdown', e=>{dragging=true; px=e.clientX; py=e.clientY; canvas.setPointerCapture(e.pointerId)});
+// Girar 360° con 1 dedo
+let pointers=new Map();
+let lastPinch=0;
+canvas.addEventListener('pointerdown', e=>{
+  pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  if(pointers.size===1){ dragging=true; px=e.clientX; py=e.clientY; }
+  if(pointers.size===2){
+    let pts=[...pointers.values()];
+    lastPinch=Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
+  }
+  canvas.setPointerCapture(e.pointerId);
+});
 canvas.addEventListener('pointermove', e=>{
+  if(!pointers.has(e.pointerId)) return;
+  pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  if(pointers.size===2){
+    // ZOOM CON 2 DEDOS COMO CÁMARA
+    let pts=[...pointers.values()];
+    let dist=Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
+    if(lastPinch>0){
+      targetZoom = Math.max(0.5, Math.min(3, targetZoom * (dist/lastPinch)));
+      updateZoomLabel();
+    }
+    lastPinch=dist;
+    return;
+  }
   if(!dragging) return;
   let dx=e.clientX-px, dy=e.clientY-py;
   targetY+=dx*0.012;
   targetX+=dy*0.012;
-  // Sin Math.max / Math.min, por eso ya gira 360° completo
   px=e.clientX; py=e.clientY;
 });
-window.addEventListener('pointerup', ()=>{dragging=false});
+window.addEventListener('pointerup', e=>{ pointers.delete(e.pointerId); if(pointers.size===0) dragging=false; lastPinch=0; });
+window.addEventListener('pointercancel', e=>{ pointers.delete(e.pointerId); dragging=false; });
+
+// Zoom con rueda del mouse también
+canvas.addEventListener('wheel', e=>{ e.preventDefault(); targetZoom=Math.max(0.5, Math.min(3, targetZoom + (e.deltaY<0?0.2:-0.2))); updateZoomLabel(); }, {passive:false});
+
+function updateZoomLabel(){
+  document.getElementById('zoomLabel').textContent='ZOOM '+targetZoom.toFixed(1)+'x';
+}
+function zoomIn(){ targetZoom=Math.min(3, targetZoom+0.3); updateZoomLabel(); }
+function zoomOut(){ targetZoom=Math.max(0.5, targetZoom-0.3); updateZoomLabel(); }
+
+// ABRIR / CERRAR CAMARA
+function openCam(){
+  document.body.classList.add('cam-mode');
+  targetZoom=1; zoom=1; updateZoomLabel();
+  setTimeout(resize, 50);
+}
+function closeCam(){
+  document.body.classList.remove('cam-mode');
+  targetZoom=1; zoom=1;
+  setTimeout(resize, 50);
+}
 
 let timer=null;
 function buscar(){
@@ -197,4 +264,4 @@ function buscar(){
 }
 </script>
 </body>
-</html>
+  </html>
