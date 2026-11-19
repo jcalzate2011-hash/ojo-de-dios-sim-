@@ -31,12 +31,8 @@ body.cam-mode .eye, body.cam-mode .box, body.cam-mode .btn-cam{display:none}
 body.cam-mode #result{position:fixed;inset:0;width:100vw;height:100dvh;border:none;border-radius:0;box-shadow:none;background:#000;z-index:10}
 body.cam-mode #result .hint{display:none}
 #staBtn{display:none}
-body.cam-mode #staBtn{display:block;position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:30;width:150px;background:#00ff88;color:#000;border:2px solid #00ff88;border-radius:30px;padding:14px;font-size:20px;font-weight:900;letter-spacing:4px;box-shadow:0 0 20px #00ff88}
-#zoomControls{display:none}
-body.cam-mode #zoomControls{display:flex;position:fixed;right:14px;top:50%;transform:translateY(-50%);flex-direction:column;gap:10px;z-index:30}
-#zoomControls button{width:50px;height:50px;padding:0;border-radius:50%;background:rgba(0,0,0,.7);color:#00ff88;border:1.5px solid #00ff88;font-size:24px}
-#zoomLabel{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:30;color:#00ff88;font-size:14px;letter-spacing:2px;background:rgba(0,0,0,.6);padding:6px 14px;border-radius:20px;border:1px solid #00ff88;display:none}
-body.cam-mode #zoomLabel{display:block}
+/* STA SOLO BORDES, FONDO NEGRO COMO EL FONDO */
+body.cam-mode #staBtn{display:block;position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:30;width:150px;background:#000;color:#00ff88;border:2px solid #00ff88;border-radius:30px;padding:14px;font-size:20px;font-weight:900;letter-spacing:4px;box-shadow:none}
 </style>
 </head>
 <body>
@@ -60,12 +56,6 @@ body.cam-mode #zoomLabel{display:block}
 
 </div>
 
-<!-- SOLO EN MODO CAMARA -->
-<div id="zoomLabel">ZOOM 1.0x</div>
-<div id="zoomControls">
-<button onclick="zoomIn()">+</button>
-<button onclick="zoomOut()">-</button>
-</div>
 <button id="staBtn" onclick="closeCam()">STA</button>
 
 <script>
@@ -97,7 +87,6 @@ function rotate3D(x,y,z){
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   let cx=canvas.width/2, cy=canvas.height/2;
-  // En modo cámara el planeta es más grande y enfocado
   let baseR=Math.min(canvas.width, canvas.height)*0.32;
   let R=baseR*zoom;
   if(document.body.classList.contains('cam-mode')) R=baseR*1.25*zoom;
@@ -171,7 +160,6 @@ function draw(){
     }
   }
 
-  // Anillos - en modo cámara más centrados
   ctx.strokeStyle='rgba(0,255,200,0.5)';
   ctx.lineWidth=2;
   ctx.beginPath();
@@ -193,7 +181,6 @@ function draw(){
 }
 draw();
 
-// Girar 360° con 1 dedo
 let pointers=new Map();
 let lastPinch=0;
 canvas.addEventListener('pointerdown', e=>{
@@ -209,12 +196,10 @@ canvas.addEventListener('pointermove', e=>{
   if(!pointers.has(e.pointerId)) return;
   pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
   if(pointers.size===2){
-    // ZOOM CON 2 DEDOS COMO CÁMARA
     let pts=[...pointers.values()];
     let dist=Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
     if(lastPinch>0){
       targetZoom = Math.max(0.5, Math.min(3, targetZoom * (dist/lastPinch)));
-      updateZoomLabel();
     }
     lastPinch=dist;
     return;
@@ -227,20 +212,11 @@ canvas.addEventListener('pointermove', e=>{
 });
 window.addEventListener('pointerup', e=>{ pointers.delete(e.pointerId); if(pointers.size===0) dragging=false; lastPinch=0; });
 window.addEventListener('pointercancel', e=>{ pointers.delete(e.pointerId); dragging=false; });
+canvas.addEventListener('wheel', e=>{ e.preventDefault(); targetZoom=Math.max(0.5, Math.min(3, targetZoom + (e.deltaY<0?0.2:-0.2))); }, {passive:false});
 
-// Zoom con rueda del mouse también
-canvas.addEventListener('wheel', e=>{ e.preventDefault(); targetZoom=Math.max(0.5, Math.min(3, targetZoom + (e.deltaY<0?0.2:-0.2))); updateZoomLabel(); }, {passive:false});
-
-function updateZoomLabel(){
-  document.getElementById('zoomLabel').textContent='ZOOM '+targetZoom.toFixed(1)+'x';
-}
-function zoomIn(){ targetZoom=Math.min(3, targetZoom+0.3); updateZoomLabel(); }
-function zoomOut(){ targetZoom=Math.max(0.5, targetZoom-0.3); updateZoomLabel(); }
-
-// ABRIR / CERRAR CAMARA
 function openCam(){
   document.body.classList.add('cam-mode');
-  targetZoom=1; zoom=1; updateZoomLabel();
+  targetZoom=1; zoom=1;
   setTimeout(resize, 50);
 }
 function closeCam(){
@@ -264,4 +240,4 @@ function buscar(){
 }
 </script>
 </body>
-  </html>
+</html>
