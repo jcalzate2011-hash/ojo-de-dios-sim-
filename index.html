@@ -66,8 +66,11 @@ let satT=0;
 
 function resize(){
   let box=document.getElementById('result');
-  canvas.width=box.clientWidth*2;
-  canvas.height=box.clientHeight*2;
+  let w=box.clientWidth||320, h=box.clientHeight||320;
+  canvas.width=w*2;
+  canvas.height=h*2;
+  canvas.style.width=w+'px';
+  canvas.style.height=h+'px';
 }
 window.addEventListener('resize', resize);
 resize();
@@ -134,7 +137,6 @@ function toXY(latDeg, lonDeg, cx, cy, R){
   return [cx+p[0]*R, cy+p[1]*R, p[2]];
 }
 
-// Punto sobre la órbita del satélite
 function orbitPoint(t, cx, cy, R, rxF, ryF, tilt){
   let x=Math.cos(t)*rxF*R;
   let y=Math.sin(t)*ryF*R;
@@ -144,6 +146,7 @@ function orbitPoint(t, cx, cy, R, rxF, ryF, tilt){
 }
 
 function draw(){
+  try{
   ctx.clearRect(0,0,canvas.width,canvas.height);
   let cx=canvas.width/2, cy=canvas.height/2;
   let baseR=Math.min(canvas.width, canvas.height)*0.32;
@@ -251,35 +254,127 @@ function draw(){
     }
     ctx.stroke();
   }
-  for(let m=0;m<12;m++){
-    let lon=m*Math.PI/6;
+
+  // ÓRBITA DEL SATÉLITE - ARREGLADA
+  function drawOrbit(orb, satAngle, isMain){
+    let N=24;
+    let pts=[];
+    for(let i=0;i<N;i++){
+      let t=(i/N)*Math.PI*2;
+      pts.push(orbitPoint(t, cx, cy, R, orb.rx, orb.ry, orb.tilt));
+    }
+    ctx.strokeStyle= isMain ? 'rgba(0,255,200,0.55)' : 'rgba(0,150,255,0.35)';
+    ctx.lineWidth=1.5;
     ctx.beginPath();
-    for(let a=-90;a<=90;a+=6){
-      let la=a*Math.PI/180;
-      let x=Math.cos(la)*Math.sin(lon);
-      let y=Math.sin(la);
-      let z=Math.cos(la)*Math.cos(lon);
-      let p=rotate3D(x,y,z);
-      let sx2=cx+p[0]*R, sy2=cy+p[1]*R;
-      if(a===-90) ctx.moveTo(sx2,sy2); else ctx.lineTo(sx2,sy2);
+    for(let i=0;i<=N;i++){
+      let p=pts[i%N];
+      if(i===0) ctx.moveTo(p[0],p[1]); else ctx.lineTo(p[0],p[1]);
     }
     ctx.stroke();
-  }
-
-  for(let i=0;i<120;i++){
-    let lat=(i*137.5 % 180 - 90)*Math.PI/180;
-    let lon=(i*89.7 % 360)*Math.PI/180;
-    let x=Math.cos(lat)*Math.sin(lon);
-    let y=Math.sin(lat);
-    let z=Math.cos(lat)*Math.cos(lon);
-    let p=rotate3D(x,y,z);
-    if(p[2] > -0.3){
-      ctx.fillStyle='rgba(150,255,210,0.9)';
-      ctx.beginPath(); ctx.arc(cx+p[0]*R, cy+p[1]*R, 3*zoom, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle= isMain ? 'rgba(0,255,200,0.18)' : 'rgba(0,150,255,0.12)';
+    ctx.lineWidth=0.8;
+    ctx.beginPath();
+    for(let i=0;i<N;i++){
+      let a=pts[i], b=pts[(i+6)%N];
+      ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]);
     }
+    ctx.stroke();
+    for(let i=0;i<N;i++){
+      ctx.fillStyle='rgba(180,255,230,0.9)';
+      ctx.beginPath(); ctx.arc(pts[i][0], pts[i][1], 2.8*zoom, 0, Math.PI*2); ctx.fill();
+    }
+    // Satélite - ángulo siempre normalizado 0 a 2pi para que no falle
+    let norm = ((satAngle % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
+    let sat=orbitPoint(norm, cx, cy, R, orb.rx, orb.ry, orb.tilt);
+    let idx=Math.floor((norm/(Math.PI*2))*N) % N;
+    let prev=pts[(idx-1+N)%N], next=pts[(idx+1)%N];
+    ctx.strokeStyle='rgba(255,255,255,0.7)';
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(sat[0],sat[1]); ctx.lineTo(prev[0],prev[1]);
+    ctx.moveTo(sat[0],sat[1]); ctx.lineTo(next[0],next[1]);
+    ctx.moveTo(sat[0],sat[1]); ctx.lineTo(cx,cy);
+    ctx.stroke();
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.arc(sat[0],sat[1], 5*zoom, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle='rgba(0,255,200,0.9)';
+    ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.arc(sat[0],sat[1], 8*zoom, 0, Math.PI*2); ctx.stroke();
   }
 
-  // NUEVO: ÓRBITA DEL SATÉLITE CON PUNTOS CONECTADOS POR TODA LA ÓRBITA
-  // Órbita 1 - la principal, inclinada
-  let orb1 = {rx:1.45, ry:0.42, tilt:0.5};
-  let orb2 = {rx:1.70, ry:0.38, tilt:-
+  drawOrbit({rx:1.70, ry:0.38, tilt:-0.4}, -satT*0.7, false);
+  drawOrbit({rx:1.45, ry:0.42, tilt:0.5}, satT, true);
+
+  ctx.strokeStyle='rgba(0,255,200,0.9)';
+  ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke();
+
+  satT+=0.008;
+  }catch(e){}
+  rotY += (targetY-rotY)*0.12;
+  rotX += (targetX-rotX)*0.12;
+  zoom += (targetZoom-zoom)*0.15;
+  requestAnimationFrame(draw);
+}
+draw();
+
+let pointers=new Map();
+let lastPinch=0;
+canvas.addEventListener('pointerdown', e=>{
+  pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  if(pointers.size===1){ dragging=true; px=e.clientX; py=e.clientY; }
+  if(pointers.size===2){
+    let pts=[...pointers.values()];
+    lastPinch=Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
+  }
+  canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove', e=>{
+  if(!pointers.has(e.pointerId)) return;
+  pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  if(pointers.size===2){
+    let pts=[...pointers.values()];
+    let dist=Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
+    if(lastPinch>0){
+      targetZoom = Math.max(0.5, Math.min(3, targetZoom * (dist/lastPinch)));
+    }
+    lastPinch=dist;
+    return;
+  }
+  if(!dragging) return;
+  let dx=e.clientX-px, dy=e.clientY-py;
+  targetY+=dx*0.012;
+  targetX+=dy*0.012;
+  px=e.clientX; py=e.clientY;
+});
+window.addEventListener('pointerup', e=>{ pointers.delete(e.pointerId); if(pointers.size===0) dragging=false; lastPinch=0; });
+window.addEventListener('pointercancel', e=>{ pointers.delete(e.pointerId); dragging=false; });
+canvas.addEventListener('wheel', e=>{ e.preventDefault(); targetZoom=Math.max(0.5, Math.min(3, targetZoom + (e.deltaY<0?0.2:-0.2))); }, {passive:false});
+
+function openCam(){
+  document.body.classList.add('cam-mode');
+  targetZoom=1; zoom=1;
+  setTimeout(resize, 50);
+}
+function closeCam(){
+  document.body.classList.remove('cam-mode');
+  targetZoom=1; zoom=1;
+  setTimeout(resize, 50);
+}
+
+let timer=null;
+function buscar(){
+  if(timer) return;
+  let btn=document.getElementById('btn');
+  let bar=document.getElementById('bar');
+  let status=document.getElementById('status');
+  btn.disabled=true; bar.style.width='0%'; status.textContent='> Buscando... 0%';
+  let p=0;
+  timer=setInterval(()=>{
+    p++; bar.style.width=p+'%'; status.textContent='> Buscando... '+p+'%';
+    if(p>=100){ clearInterval(timer); timer=null; status.textContent='> Listo.'; btn.disabled=false; }
+  },600);
+}
+</script>
+</body>
+</html>
