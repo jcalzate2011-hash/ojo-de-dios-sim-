@@ -81,7 +81,6 @@ function rotate3D(x,y,z){
   return [x2,y1,z2];
 }
 
-// MAPA COMPLETO - todos los países, solo forma, sin nombres ni información
 const CONTINENTS=[
   [[72,-168],[70,-155],[70,-140],[69,-130],[68,-120],[67,-110],[65,-100],[62,-95],[60,-90],[58,-85],[55,-82],[52,-78],[50,-70],[48,-68],[46,-70],[44,-72],[42,-76],[40,-75],[38,-78],[36,-80],[34,-82],[32,-85],[30,-88],[28,-92],[26,-96],[24,-100],[22,-103],[20,-105],[18,-103],[16,-98],[15,-93],[16,-88],[18,-85],[20,-87],[22,-90],[24,-100],[28,-108],[32,-114],[36,-120],[40,-125],[44,-125],[48,-128],[52,-130],[56,-132],[60,-140],[64,-145],[68,-155],[72,-168]],
   [[71,-166],[70,-158],[68,-150],[66,-145],[68,-138],[70,-130],[70,-122],[69,-115],[68,-110],[66,-115],[64,-120],[62,-128],[60,-135],[60,-145],[62,-155],[65,-162],[68,-168],[71,-166]],
@@ -106,20 +105,21 @@ const CONTINENTS=[
   [[-35,173],[-37,175],[-39,176],[-41,174],[-43,172],[-45,170],[-43,168],[-40,170],[-38,172],[-36,174],[-35,173]]
 ];
 
-// ESTO ES LO NUEVO: suaviza los bordes con curvas, no con líneas rectas
+// ONDULACIÓN PROFUNDA Y VARIADA: unas partes bien metidas, otras salidas
 function smoothPoly(poly){
   let out=[];
   let n=poly.length;
-  // Catmull-Rom: crea muchos puntos entre cada punto para que la costa sea curva
   for(let i=0;i<n;i++){
     let p0=poly[(i-1+n)%n], p1=poly[i], p2=poly[(i+1)%n], p3=poly[(i+2)%n];
-    for(let t=0;t<1;t+=0.12){
+    for(let t=0;t<1;t+=0.10){
       let t2=t*t, t3=t2*t;
       let lat=0.5*((2*p1[0])+(-p0[0]+p2[0])*t+(2*p0[0]-5*p1[0]+4*p2[0]-p3[0])*t2+(-p0[0]+3*p1[0]-3*p2[0]+p3[0])*t3);
       let lon=0.5*((2*p1[1])+(-p0[1]+p2[1])*t+(2*p0[1]-5*p1[1]+4*p2[1]-p3[1])*t2+(-p0[1]+3*p1[1]-3*p2[1]+p3[1])*t3);
-      // Ondulación pequeña tipo costa real, como se ve en satélite
-      let w=Math.sin(i*2.3+t*6)*0.35;
-      out.push([lat+w*0.4, lon+w*0.5]);
+      // 2 ondas mezcladas: una profunda y otra suave, por eso unas partes quedan profundas y otras no
+      let deep=Math.sin(i*1.7+t*5.2)*1.4 + Math.sin(i*3.9+t*9.1)*0.7 + Math.sin(i*0.6+t*2.0)*0.5;
+      // Más profundo en algunas zonas, más suave en otras
+      let amp = (i%3===0) ? 1.3 : 0.6;
+      out.push([lat+deep*amp*0.45, lon+deep*amp*0.55]);
     }
   }
   return out;
@@ -127,7 +127,9 @@ function smoothPoly(poly){
 const SMOOTHED=CONTINENTS.map(p=>smoothPoly(p));
 
 function drawContinent(poly, cx, cy, R){
+  // Convierte todo el continente a puntos 3D y calcula su profundidad promedio
   let pts=[];
+  let sumZ=0;
   for(let i=0;i<poly.length;i++){
     let lat=poly[i][0]*Math.PI/180;
     let lon=poly[i][1]*Math.PI/180;
@@ -136,22 +138,9 @@ function drawContinent(poly, cx, cy, R){
     let z=Math.cos(lat)*Math.cos(lon);
     let p=rotate3D(x,y,z);
     pts.push([cx+p[0]*R, cy+p[1]*R, p[2]]);
+    sumZ+=p[2];
   }
-  ctx.fillStyle='rgba(0,255,140,0.22)';
-  ctx.strokeStyle='rgba(0,255,170,0.95)';
-  ctx.lineWidth=1.4;
-  ctx.lineJoin='round';
-  ctx.lineCap='round';
-  ctx.beginPath();
-  let started=false;
-  for(let i=0;i<pts.length;i++){
-    if(pts[i][2] < -0.05){ started=false; continue; }
-    if(!started){ ctx.moveTo(pts[i][0], pts[i][1]); started=true; }
-    else ctx.lineTo(pts[i][0], pts[i][1]);
-  }
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
+  return {pts, avgZ: sumZ/poly.length};
 }
 
 function draw(){
@@ -174,9 +163,40 @@ function draw(){
   ctx.fillStyle=g2;
   ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.fill();
 
+  // SOLUCIÓN A PAÍSES ENCIMA DE OTROS: recortar al círculo y dibujar de atrás hacia adelante
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.clip();
+
+  let all=[];
   for(let c=0;c<SMOOTHED.length;c++){
-    drawContinent(SMOOTHED[c], cx, cy, R);
+    all.push(drawContinent(SMOOTHED[c], cx, cy, R));
   }
+  // Orden por profundidad: los de atrás primero, los de adelante al final
+  all.sort((a,b)=>a.avgZ-b.avgZ);
+
+  for(let k=0;k<all.length;k++){
+    let pts=all[k].pts;
+    // Si el continente está casi todo atrás, lo dibuja más tenue para que no tape al de adelante
+    let alpha = pts.length>0 && all[k].avgZ < -0.2 ? 0.10 : 0.22;
+    let strokeA = all[k].avgZ < -0.2 ? 0.3 : 0.95;
+    ctx.fillStyle='rgba(0,255,140,'+alpha+')';
+    ctx.strokeStyle='rgba(0,255,170,'+strokeA+')';
+    ctx.lineWidth=1.4;
+    ctx.lineJoin='round';
+    ctx.lineCap='round';
+    ctx.beginPath();
+    let started=false;
+    for(let i=0;i<pts.length;i++){
+      // Solo dibuja la parte que está de frente, la de atrás no se dibuja
+      if(pts[i][2] < 0.02){ started=false; continue; }
+      if(!started){ ctx.moveTo(pts[i][0], pts[i][1]); started=true; }
+      else ctx.lineTo(pts[i][0], pts[i][1]);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+  ctx.restore();
 
   ctx.strokeStyle='rgba(0,255,170,0.35)';
   ctx.lineWidth=1;
