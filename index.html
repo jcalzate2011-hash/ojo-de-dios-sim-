@@ -37,7 +37,7 @@ button:disabled{opacity:.6}
 
 <div id="result">
 <canvas id="globe"></canvas>
-<div class="hint">↔ Arrastra para girar el planeta</div>
+<div class="hint">↔ Arrastra para girar el planeta 360°</div>
 </div>
 
 </div>
@@ -57,17 +57,96 @@ function resize(){
 window.addEventListener('resize', resize);
 resize();
 
+// Rota un punto 3D en X y luego en Y - así da 360° para todos lados
+function rotate3D(x,y,z){
+  let cx=Math.cos(rotX), sx=Math.sin(rotX);
+  let y1=y*cx - z*sx;
+  let z1=y*sx + z*cx;
+  let cy=Math.cos(rotY), sy=Math.sin(rotY);
+  let x2=x*cy + z1*sy;
+  let z2=-x*sy + z1*cy;
+  return [x2,y1,z2];
+}
+
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   let cx=canvas.width/2, cy=canvas.height/2;
   let R=Math.min(canvas.width, canvas.height)*0.32;
 
-  // Resplandor
   let grad=ctx.createRadialGradient(cx,cy,R*0.2,cx,cy,R*1.8);
   grad.addColorStop(0,'rgba(0,255,200,0.25)');
   grad.addColorStop(1,'rgba(0,255,200,0)');
   ctx.fillStyle=grad;
   ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // Esfera azul-verde transparentosa
+  let g2=ctx.createRadialGradient(cx-R*0.3,cy-R*0.3,R*0.1,cx,cy,R);
+  g2.addColorStop(0,'rgba(0,255,180,0.55)');
+  g2.addColorStop(0.5,'rgba(0,180,255,0.30)');
+  g2.addColorStop(1,'rgba(0,80,180,0.15)');
+  ctx.fillStyle=g2;
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.fill();
+
+  // Paralelos 360°
+  ctx.strokeStyle='rgba(0,255,170,0.65)';
+  ctx.lineWidth=1.5;
+  for(let lat=-60; lat<=60; lat+=30){
+    let la=lat*Math.PI/180;
+    ctx.beginPath();
+    for(let a=0;a<=360;a+=6){
+      let lon=a*Math.PI/180;
+      let x=Math.cos(la)*Math.sin(lon);
+      let y=Math.sin(la);
+      let z=Math.cos(la)*Math.cos(lon);
+      let p=rotate3D(x,y,z);
+      let sx2=cx+p[0]*R, sy2=cy+p[1]*R;
+      if(a===0) ctx.moveTo(sx2,sy2); else ctx.lineTo(sx2,sy2);
+    }
+    ctx.stroke();
+  }
+
+  // Meridianos 360°
+  for(let m=0;m<12;m++){
+    let lon=m*Math.PI/6;
+    ctx.beginPath();
+    for(let a=-90;a<=90;a+=6){
+      let la=a*Math.PI/180;
+      let x=Math.cos(la)*Math.sin(lon);
+      let y=Math.sin(la);
+      let z=Math.cos(la)*Math.cos(lon);
+      let p=rotate3D(x,y,z);
+      let sx2=cx+p[0]*R, sy2=cy+p[1]*R;
+      if(a===-90) ctx.moveTo(sx2,sy2); else ctx.lineTo(sx2,sy2);
+    }
+    ctx.stroke();
+    // La otra mitad del meridiano para que cierre el círculo completo
+    ctx.beginPath();
+    for(let a=-90;a<=90;a+=6){
+      let la=a*Math.PI/180;
+      let lon2=lon+Math.PI;
+      let x=Math.cos(la)*Math.sin(lon2);
+      let y=Math.sin(la);
+      let z=Math.cos(la)*Math.cos(lon2);
+      let p=rotate3D(x,y,z);
+      let sx2=cx+p[0]*R, sy2=cy+p[1]*R;
+      if(a===-90) ctx.moveTo(sx2,sy2); else ctx.lineTo(sx2,sy2);
+    }
+    ctx.stroke();
+  }
+
+  // Puntos brillantes - 3D real
+  for(let i=0;i<120;i++){
+    let lat=(i*137.5 % 180 - 90)*Math.PI/180;
+    let lon=(i*89.7 % 360)*Math.PI/180;
+    let x=Math.cos(lat)*Math.sin(lon);
+    let y=Math.sin(lat);
+    let z=Math.cos(lat)*Math.cos(lon);
+    let p=rotate3D(x,y,z);
+    if(p[2] > -0.3){
+      ctx.fillStyle='rgba(150,255,210,0.9)';
+      ctx.beginPath(); ctx.arc(cx+p[0]*R, cy+p[1]*R, 3, 0, Math.PI*2); ctx.fill();
+    }
+  }
 
   // Anillos
   ctx.strokeStyle='rgba(0,255,200,0.5)';
@@ -80,65 +159,25 @@ function draw(){
   ctx.ellipse(cx,cy,R*1.7,R*0.35,-0.4,0,Math.PI*2);
   ctx.stroke();
 
-  // Esfera azul-verde transparentosa
-  let g2=ctx.createRadialGradient(cx-R*0.3,cy-R*0.3,R*0.1,cx,cy,R);
-  g2.addColorStop(0,'rgba(0,255,180,0.55)');
-  g2.addColorStop(0.5,'rgba(0,180,255,0.30)');
-  g2.addColorStop(1,'rgba(0,80,180,0.15)');
-  ctx.fillStyle=g2;
-  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.fill();
-
-  // Latitudes y longitudes holograma
-  ctx.strokeStyle='rgba(0,255,170,0.65)';
-  ctx.lineWidth=1.5;
-  for(let i=-60;i<=60;i+=30){
-    let y=Math.sin(i*Math.PI/180)*Math.cos(rotX) - Math.cos(i*Math.PI/180)*Math.sin(rotX)*0.2;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy + y*R, R, Math.abs(Math.cos(i*Math.PI/180))*R*0.9+2, 0, 0, Math.PI*2);
-    ctx.stroke();
-  }
-  for(let j=0;j<12;j++){
-    let a=rotY + j*Math.PI/6;
-    let rx=Math.abs(Math.cos(a))*R;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, rx, R, 0, 0, Math.PI*2);
-    ctx.stroke();
-  }
-
-  // Puntos brillantes
-  for(let i=0;i<90;i++){
-    let lat=(i*137.5 % 180 - 90)*Math.PI/180;
-    let lon=(i*89.7 % 360)*Math.PI/180 + rotY;
-    let x=Math.cos(lat)*Math.sin(lon);
-    let y=Math.sin(lat)*Math.cos(rotX) - Math.cos(lat)*Math.cos(lon)*Math.sin(rotX);
-    let z=Math.cos(lat)*Math.cos(lon);
-    if(z > -0.2){
-      let px2=cx + x*R;
-      let py2=cy + y*R;
-      ctx.fillStyle='rgba(150,255,210,0.9)';
-      ctx.beginPath(); ctx.arc(px2,py2,3,0,Math.PI*2); ctx.fill();
-    }
-  }
-
   // Borde
   ctx.strokeStyle='rgba(0,255,200,0.9)';
   ctx.lineWidth=2;
   ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke();
 
-  // Suave al soltar
   rotY += (targetY-rotY)*0.12;
   rotX += (targetX-rotX)*0.12;
   requestAnimationFrame(draw);
 }
 draw();
 
-// SOLO SE MUEVE CUANDO LO MUEVES TU
+// SIN LÍMITE - 360° PARA TODOS LADOS
 canvas.addEventListener('pointerdown', e=>{dragging=true; px=e.clientX; py=e.clientY; canvas.setPointerCapture(e.pointerId)});
 canvas.addEventListener('pointermove', e=>{
   if(!dragging) return;
   let dx=e.clientX-px, dy=e.clientY-py;
-  targetY+=dx*0.01; targetX+=dy*0.01;
-  targetX=Math.max(-1, Math.min(1, targetX));
+  targetY+=dx*0.012;
+  targetX+=dy*0.012;
+  // Sin Math.max / Math.min, por eso ya gira 360° completo
   px=e.clientX; py=e.clientY;
 });
 window.addEventListener('pointerup', ()=>{dragging=false});
