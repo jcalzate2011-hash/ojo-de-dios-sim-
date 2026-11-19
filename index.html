@@ -17,7 +17,7 @@ button:disabled{opacity:.6}
 .bar-wrap{width:100%;height:14px;background:#022c1a;border-radius:20px;overflow:hidden;margin:18px 0 8px}
 #bar{height:100%;width:0%;background:#00ff88;transition:width .3s}
 #status{font-size:16px;min-height:22px}
-#result{width:100%;height:320px;border:1px solid #00ff88;border-radius:16px;position:relative;overflow:hidden;background:radial-gradient(circle at center, rgba(0,255,200,.15), transparent 70%);box-shadow:0 0 20px rgba(0,255,136,.2)}
+#result{width:100%;height:320px;border:1px solid #00ff88;border-radius:16px;position:relative;overflow:hidden;background:radial-gradient(circle at center, rgba(0,150,255,.18), transparent 70%);box-shadow:0 0 20px rgba(0,255,136,.2)}
 #globe{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
 #globe:active{cursor:grabbing}
 .hint{position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:11px;color:#00ff8888;pointer-events:none}
@@ -105,7 +105,6 @@ const CONTINENTS=[
   [[-35,173],[-37,175],[-39,176],[-41,174],[-43,172],[-45,170],[-43,168],[-40,170],[-38,172],[-36,174],[-35,173]]
 ];
 
-// ONDULACIÓN PROFUNDA Y VARIADA: unas partes bien metidas, otras salidas
 function smoothPoly(poly){
   let out=[];
   let n=poly.length;
@@ -115,9 +114,7 @@ function smoothPoly(poly){
       let t2=t*t, t3=t2*t;
       let lat=0.5*((2*p1[0])+(-p0[0]+p2[0])*t+(2*p0[0]-5*p1[0]+4*p2[0]-p3[0])*t2+(-p0[0]+3*p1[0]-3*p2[0]+p3[0])*t3);
       let lon=0.5*((2*p1[1])+(-p0[1]+p2[1])*t+(2*p0[1]-5*p1[1]+4*p2[1]-p3[1])*t2+(-p0[1]+3*p1[1]-3*p2[1]+p3[1])*t3);
-      // 2 ondas mezcladas: una profunda y otra suave, por eso unas partes quedan profundas y otras no
       let deep=Math.sin(i*1.7+t*5.2)*1.4 + Math.sin(i*3.9+t*9.1)*0.7 + Math.sin(i*0.6+t*2.0)*0.5;
-      // Más profundo en algunas zonas, más suave en otras
       let amp = (i%3===0) ? 1.3 : 0.6;
       out.push([lat+deep*amp*0.45, lon+deep*amp*0.55]);
     }
@@ -127,7 +124,6 @@ function smoothPoly(poly){
 const SMOOTHED=CONTINENTS.map(p=>smoothPoly(p));
 
 function drawContinent(poly, cx, cy, R){
-  // Convierte todo el continente a puntos 3D y calcula su profundidad promedio
   let pts=[];
   let sumZ=0;
   for(let i=0;i<poly.length;i++){
@@ -150,44 +146,53 @@ function draw(){
   let R=baseR*zoom;
   if(document.body.classList.contains('cam-mode')) R=baseR*1.25*zoom;
 
-  let grad=ctx.createRadialGradient(cx,cy,R*0.2,cx,cy,R*1.8);
-  grad.addColorStop(0,'rgba(0,255,200,0.25)');
-  grad.addColorStop(1,'rgba(0,255,200,0)');
-  ctx.fillStyle=grad;
+  // FONDO DETRÁS DEL PLANETA COMO EN LA FOTO - azul oscuro espacial
+  let glow=ctx.createRadialGradient(cx,cy,R*0.2,cx,cy,R*2.0);
+  glow.addColorStop(0,'rgba(0,140,255,0.22)');
+  glow.addColorStop(1,'rgba(0,140,255,0)');
+  ctx.fillStyle=glow;
   ctx.fillRect(0,0,canvas.width,canvas.height);
 
-  let g2=ctx.createRadialGradient(cx-R*0.3,cy-R*0.3,R*0.1,cx,cy,R);
-  g2.addColorStop(0,'rgba(0,255,180,0.55)');
-  g2.addColorStop(0.5,'rgba(0,180,255,0.30)');
-  g2.addColorStop(1,'rgba(0,80,180,0.15)');
-  ctx.fillStyle=g2;
+  // OCÉANO COMO EN LA FOTO - azul brillante de satélite, no verde
+  let ocean=ctx.createRadialGradient(cx-R*0.4,cy-R*0.4,R*0.1,cx,cy,R);
+  ocean.addColorStop(0,'#7dd3ff');
+  ocean.addColorStop(0.35,'#2fb3f0');
+  ocean.addColorStop(0.65,'#0a7fd6');
+  ocean.addColorStop(1,'#053a78');
+  ctx.fillStyle=ocean;
   ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.fill();
 
-  // SOLUCIÓN A PAÍSES ENCIMA DE OTROS: recortar al círculo y dibujar de atrás hacia adelante
+  // Nubes suaves tipo satélite
   ctx.save();
   ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.clip();
+  ctx.fillStyle='rgba(255,255,255,0.10)';
+  for(let i=0;i<18;i++){
+    let y=cy + Math.sin(i*2.1)*R*0.8;
+    let x=cx + Math.cos(i*1.3)*R*0.7;
+    ctx.beginPath(); ctx.ellipse(x,y,R*0.35,R*0.06,i,0,Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
 
+  // CONTINENTES COMO EN LA FOTO - color tierra / beige-verdoso, no verde neón
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.clip();
   let all=[];
   for(let c=0;c<SMOOTHED.length;c++){
     all.push(drawContinent(SMOOTHED[c], cx, cy, R));
   }
-  // Orden por profundidad: los de atrás primero, los de adelante al final
   all.sort((a,b)=>a.avgZ-b.avgZ);
-
   for(let k=0;k<all.length;k++){
     let pts=all[k].pts;
-    // Si el continente está casi todo atrás, lo dibuja más tenue para que no tape al de adelante
-    let alpha = pts.length>0 && all[k].avgZ < -0.2 ? 0.10 : 0.22;
-    let strokeA = all[k].avgZ < -0.2 ? 0.3 : 0.95;
-    ctx.fillStyle='rgba(0,255,140,'+alpha+')';
-    ctx.strokeStyle='rgba(0,255,170,'+strokeA+')';
-    ctx.lineWidth=1.4;
+    let isBack = all[k].avgZ < -0.2;
+    // Tierra: beige claro como en la foto, con un poco de verde
+    ctx.fillStyle= isBack ? 'rgba(200,190,140,0.35)' : 'rgba(215,205,150,0.95)';
+    ctx.strokeStyle= isBack ? 'rgba(180,170,120,0.4)' : 'rgba(160,150,105,0.9)';
+    ctx.lineWidth=1.1;
     ctx.lineJoin='round';
     ctx.lineCap='round';
     ctx.beginPath();
     let started=false;
     for(let i=0;i<pts.length;i++){
-      // Solo dibuja la parte que está de frente, la de atrás no se dibuja
       if(pts[i][2] < 0.02){ started=false; continue; }
       if(!started){ ctx.moveTo(pts[i][0], pts[i][1]); started=true; }
       else ctx.lineTo(pts[i][0], pts[i][1]);
@@ -195,10 +200,18 @@ function draw(){
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
+    // Sombra suave de relieve dentro de la tierra
+    if(!isBack){
+      ctx.fillStyle='rgba(120,140,70,0.18)';
+      ctx.fill();
+    }
   }
   ctx.restore();
 
-  ctx.strokeStyle='rgba(0,255,170,0.35)';
+  // Líneas de latitud / longitud muy suaves como en la foto
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.clip();
+  ctx.strokeStyle='rgba(255,255,255,0.18)';
   ctx.lineWidth=1;
   for(let lat=-60; lat<=60; lat+=30){
     let la=lat*Math.PI/180;
@@ -209,51 +222,28 @@ function draw(){
       let y=Math.sin(la);
       let z=Math.cos(la)*Math.cos(lon);
       let p=rotate3D(x,y,z);
+      if(p[2]<0) continue;
       let sx2=cx+p[0]*R, sy2=cy+p[1]*R;
       if(a===0) ctx.moveTo(sx2,sy2); else ctx.lineTo(sx2,sy2);
     }
     ctx.stroke();
   }
-  for(let m=0;m<12;m++){
-    let lon=m*Math.PI/6;
-    ctx.beginPath();
-    for(let a=-90;a<=90;a+=6){
-      let la=a*Math.PI/180;
-      let x=Math.cos(la)*Math.sin(lon);
-      let y=Math.sin(la);
-      let z=Math.cos(la)*Math.cos(lon);
-      let p=rotate3D(x,y,z);
-      let sx2=cx+p[0]*R, sy2=cy+p[1]*R;
-      if(a===-90) ctx.moveTo(sx2,sy2); else ctx.lineTo(sx2,sy2);
-    }
-    ctx.stroke();
-  }
+  ctx.restore();
 
-  for(let i=0;i<120;i++){
-    let lat=(i*137.5 % 180 - 90)*Math.PI/180;
-    let lon=(i*89.7 % 360)*Math.PI/180;
-    let x=Math.cos(lat)*Math.sin(lon);
-    let y=Math.sin(lat);
-    let z=Math.cos(lat)*Math.cos(lon);
-    let p=rotate3D(x,y,z);
-    if(p[2] > -0.3){
-      ctx.fillStyle='rgba(150,255,210,0.9)';
-      ctx.beginPath(); ctx.arc(cx+p[0]*R, cy+p[1]*R, 3*zoom, 0, Math.PI*2); ctx.fill();
-    }
-  }
-
-  ctx.strokeStyle='rgba(0,255,200,0.5)';
-  ctx.lineWidth=2;
+  // Anillos orbitales como en la foto - azul claro
+  ctx.strokeStyle='rgba(80,200,255,0.55)';
+  ctx.lineWidth=1.5;
   ctx.beginPath();
   ctx.ellipse(cx,cy,R*1.45,R*0.4,0.5,0,Math.PI*2);
   ctx.stroke();
-  ctx.strokeStyle='rgba(0,150,255,0.4)';
+  ctx.strokeStyle='rgba(80,180,255,0.35)';
   ctx.beginPath();
   ctx.ellipse(cx,cy,R*1.7,R*0.35,-0.4,0,Math.PI*2);
   ctx.stroke();
 
-  ctx.strokeStyle='rgba(0,255,200,0.9)';
-  ctx.lineWidth=2;
+  // Borde del planeta azul brillante como en la foto
+  ctx.strokeStyle='rgba(140,220,255,0.95)';
+  ctx.lineWidth=2.5;
   ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke();
 
   rotY += (targetY-rotY)*0.12;
