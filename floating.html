@@ -5,11 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#111;color:#fff;font-family:Arial;padding:20px;padding-bottom:120px;overflow:hidden}
-h1{font-size:18px}
-p{font-size:13px;color:#aaa;margin-top:8px}
+body{background:#000;color:#fff;font-family:Arial;overflow:hidden;height:100vh}
 
-/* BOTÓN FLOTANTE QUE SE MUEVE */
 #btnFlotante{
   position:fixed;
   bottom:90px; right:16px;
@@ -26,6 +23,7 @@ p{font-size:13px;color:#aaa;margin-top:8px}
   touch-action:none;
   user-select:none;
   -webkit-user-select:none;
+  display:none;
 }
 
 #fondo{
@@ -47,7 +45,6 @@ p{font-size:13px;color:#aaa;margin-top:8px}
 }
 #menuFlotante h2{font-size:16px;margin-bottom:10px}
 
-/* FILA ESP FOV */
 .fila-esp{
   display:flex;
   align-items:center;
@@ -63,7 +60,6 @@ p{font-size:13px;color:#aaa;margin-top:8px}
 #estadoESP{font-size:12px;padding:5px 10px;border-radius:20px;background:#444;color:#fff}
 .fila-esp.activo #estadoESP{background:#00ff88;color:#000}
 
-/* SWITCH */
 .switch{position:relative;width:52px;height:28px;background:#555;border-radius:30px;cursor:pointer;flex-shrink:0}
 .switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;background:#fff;border-radius:50%;transition:.2s}
 .switch.on{background:#00ff88}
@@ -81,27 +77,43 @@ p{font-size:13px;color:#aaa;margin-top:8px}
   cursor:pointer;
 }
 
-/* DEMO PARA VER EL CAMBIO */
-#demoESP{
-  margin-top:20px;
-  border:2px dashed #444;
-  border-radius:14px;
-  padding:20px;
+/* PANTALLA DE PERMISO */
+#pantallaPermiso{
+  position:fixed; inset:0;
+  background:#000;
+  z-index:2000;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
   text-align:center;
-  transition:.3s;
 }
-#demoESP.activo{border-color:#00ff88;box-shadow:0 0 20px rgba(0,255,136,.5)}
+#pantallaPermiso h1{font-size:20px;margin-bottom:10px}
+#pantallaPermiso p{font-size:14px;color:#aaa;line-height:1.5;margin-bottom:20px}
+#btnPermiso{
+  width:100%;
+  background:#00ff88;
+  border:none;
+  color:#000;
+  border-radius:14px;
+  padding:16px;
+  font-size:16px;
+  font-weight:900;
+}
+#btnYaLoActive{
+  width:100%;
+  background:#222;
+  border:1px solid #444;
+  color:#fff;
+  border-radius:14px;
+  padding:14px;
+  margin-top:10px;
+  font-size:14px;
+}
 </style>
 </head>
 <body>
-
-<h1>Mi juego / Mi app</h1>
-<p>Arrastra el botón verde a donde quieras. Tócalo 1 vez para abrir el menú.</p>
-
-<div id="demoESP">
-  <div style="font-size:30px">👁️</div>
-  <div id="textoDemo" style="margin-top:8px">ESP FOV: DESACTIVADO</div>
-</div>
 
 <button id="btnFlotante">☰</button>
 
@@ -109,7 +121,6 @@ p{font-size:13px;color:#aaa;margin-top:8px}
 
 <div id="menuFlotante">
   <h2>☰ MENÚ</h2>
-  
   <div class="fila-esp" id="filaESP" onclick="toggleESP()">
     <div>
       <span>ESP FOV</span><br>
@@ -117,8 +128,16 @@ p{font-size:13px;color:#aaa;margin-top:8px}
     </div>
     <div class="switch" id="switchESP"></div>
   </div>
-
   <button id="cerrar" onclick="cerrarMenu()">CERRAR</button>
+</div>
+
+<!-- PANTALLA DE PERMISO AL ENTRAR -->
+<div id="pantallaPermiso">
+  <div style="font-size:50px">👁️</div>
+  <h1>Permiso necesario</h1>
+  <p>Para que el botón flotante se vea sobre otras apps, tienes que activar el permiso.<br><br>1. Dale en <b>Dar permiso</b><br>2. Busca <b>P6 King</b><br>3. Activa <b>Permitir mostrar sobre otras apps</b><br>4. Vuelve acá y dale en <b>Ya lo activé</b></p>
+  <button id="btnPermiso" onclick="pedirPermiso()">DAR PERMISO</button>
+  <button id="btnYaLoActive" onclick="entrarApp()">Ya lo activé, entrar</button>
 </div>
 
 <script>
@@ -128,14 +147,11 @@ let seMovio = false;
 let startX, startY, btnX, btnY;
 
 btn.addEventListener('touchstart', function(e){
-  moviendo = true;
-  seMovio = false;
+  moviendo = true; seMovio = false;
   let t = e.touches[0];
-  startX = t.clientX;
-  startY = t.clientY;
+  startX = t.clientX; startY = t.clientY;
   let r = btn.getBoundingClientRect();
-  btnX = r.left;
-  btnY = r.top;
+  btnX = r.left; btnY = r.top;
 }, {passive:false});
 
 btn.addEventListener('touchmove', function(e){
@@ -147,7 +163,6 @@ btn.addEventListener('touchmove', function(e){
   if(Math.abs(dx) > 8 || Math.abs(dy) > 8) seMovio = true;
   let nx = btnX + dx;
   let ny = btnY + dy;
-  // No dejar que se salga de la pantalla
   nx = Math.max(0, Math.min(window.innerWidth - 60, nx));
   ny = Math.max(0, Math.min(window.innerHeight - 60, ny));
   btn.style.left = nx + 'px';
@@ -158,39 +173,7 @@ btn.addEventListener('touchmove', function(e){
 
 btn.addEventListener('touchend', function(){
   moviendo = false;
-  // Si NO se movió, fue un toque = abrir menú
-  if(!seMovio){
-    abrirMenu();
-  }
-});
-
-// Para que también funcione con mouse en PC
-btn.addEventListener('mousedown', function(e){
-  moviendo = true; seMovio = false;
-  startX = e.clientX; startY = e.clientY;
-  let r = btn.getBoundingClientRect();
-  btnX = r.left; btnY = r.top;
-});
-document.addEventListener('mousemove', function(e){
-  if(!moviendo) return;
-  let dx = e.clientX - startX;
-  let dy = e.clientY - startY;
-  if(Math.abs(dx) > 8 || Math.abs(dy) > 8) seMovio = true;
-  let nx = btnX + dx;
-  let ny = btnY + dy;
-  nx = Math.max(0, Math.min(window.innerWidth - 60, nx));
-  ny = Math.max(0, Math.min(window.innerHeight - 60, ny));
-  btn.style.left = nx + 'px';
-  btn.style.top = ny + 'px';
-  btn.style.right = 'auto';
-  btn.style.bottom = 'auto';
-});
-document.addEventListener('mouseup', function(){
-  if(moviendo && !seMovio){
-    // Click sin arrastrar en PC
-    if(window.innerWidth > 768) abrirMenu();
-  }
-  moviendo = false;
+  if(!seMovio) abrirMenu();
 });
 
 function abrirMenu(){
@@ -208,9 +191,21 @@ function toggleESP(){
   document.getElementById('filaESP').classList.toggle('activo', espActivo);
   document.getElementById('switchESP').classList.toggle('on', espActivo);
   document.getElementById('estadoESP').textContent = espActivo ? 'ON' : 'OFF';
-  document.getElementById('demoESP').classList.toggle('activo', espActivo);
-  document.getElementById('textoDemo').textContent = espActivo ? 'ESP FOV: ACTIVADO' : 'ESP FOV: DESACTIVADO';
+}
+
+function pedirPermiso(){
+  // Intenta abrir los Ajustes de Android de "Mostrar sobre otras apps"
+  // En un APK hecho con WebIntoApp esto abre la pantalla de ajustes
+  try{
+    window.location.href = "intent:#Intent;action=android.settings.action.MANAGE_OVERLAY_PERMISSION;end";
+  }catch(e){}
+  alert("Si no se abrió solo, ve a: Ajustes > Aplicaciones > P6 King > Mostrar sobre otras apps y actívalo");
+}
+
+function entrarApp(){
+  document.getElementById('pantallaPermiso').style.display='none';
+  document.getElementById('btnFlotante').style.display='block';
 }
 </script>
 </body>
-  </html>
+</html>
