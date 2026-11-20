@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>GRIMVEX - Simulation Moteur V10</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#fff;font-family:Arial,sans-serif;overflow:hidden}
+#top{display:flex;justify-content:space-between;padding:8px 10px;font-size:11px;color:#888}
+#stage{position:relative;width:100%;height:52vh;background:radial-gradient(circle at 50% 60%, #1a2a22 0%, #000 70%);overflow:hidden}
+#eng{width:100%;height:100%;display:block}
+#platform{position:absolute;left:10%;right:10%;bottom:18%;height:14px;background:#00ff66;transform:perspective(400px) rotateX(60deg);opacity:.7;box-shadow:0 0 20px #00ff66}
+#modes{display:flex;gap:6px;padding:8px;overflow-x:auto}
+.mode{flex:1;white-space:nowrap;background:#111;border:1px solid #333;border-radius:8px;color:#aaa;padding:9px 6px;font-size:11px;letter-spacing:1px;cursor:pointer}
+.mode.on{background:#0a2a1a;color:#00ff88;border-color:#00ff88}
+#dots{text-align:center;color:#555;font-size:10px;letter-spacing:4px}
+#nav{display:flex;gap:6px;padding:6px 8px}
+.nbtn{flex:1;background:#1a1a1a;border:1px solid #333;border-radius:20px;color:#fff;padding:10px;font-weight:900;cursor:pointer}
+.nbtn.yellow{border-color:#ffb400;color:#ffb400}
+.nbtn.green{border-color:#00ff88;color:#00ff88}
+#controls{display:flex;gap:6px;padding:4px 8px;align-items:center}
+.cbtn{background:#1a1a1a;border:1px solid #333;border-radius:10px;color:#fff;padding:10px 14px;cursor:pointer}
+#stepBox{background:#111;margin:8px;border:1px solid #222;border-radius:14px;padding:12px}
+#stepTitle{font-weight:900;font-size:14px}
+#stepDesc{font-size:12px;color:#bbb;margin:6px 0 10px;line-height:1.4}
+#stepBtn{width:100%;background:#00ff88;color:#000;border:none;border-radius:10px;padding:13px;font-weight:900;font-size:15px;cursor:pointer}
+#stepBtn:disabled{background:#333;color:#777}
+#bar{height:8px;background:#222;border-radius:10px;overflow:hidden;margin:8px 0}
+#fill{height:100%;width:0%;background:#00ff88;transition:width .4s}
+#dash{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:0 8px 8px}
+.gear{background:#111;border:1px solid #333;border-radius:10px;padding:8px;text-align:center}
+.gear button{width:100%;background:#0a0a0a;border:1px solid #444;color:#fff;border-radius:8px;padding:9px;margin:2px 0;font-weight:900;cursor:pointer}
+.gear button.sel{background:#00ff88;color:#000}
+.gear button.selR{background:#ff6b00;color:#fff}
+#rpmBox{text-align:center;background:#111;border:1px solid #333;border-radius:10px;padding:8px}
+#rpm{font-size:28px;font-weight:900;color:#00ff88}
+#speed{font-size:12px;color:#aaa}
+#pedals{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:0 8px 10px}
+.pedal{border-radius:14px;padding:16px 6px;text-align:center;font-weight:900;user-select:none;touch-action:none;cursor:pointer}
+#feu{background:#330000;border:1px solid #ff3333;color:#ff6666}
+#frein{background:#1a1a1a;border:1px solid #666}
+#gaz{background:#4a3800;border:1px solid #ffcc00;color:#ffcc00}
+.pedal:active{transform:scale(.96)}
+#msg{text-align:center;font-size:11px;color:#ffb400;min-height:14px;padding:0 8px 6px}
+</style>
+</head>
+<body>
+<div id="top"><span>● LIVE</span><span>GRIMVEX • V10</span><span>🔍</span></div>
+
+<div id="stage">
+<div id="platform"></div>
+<canvas id="eng"></canvas>
+</div>
+
+<div id="modes">
+<button class="mode on" id="mAssemble" onclick="setMode('assemble')">ASSEMBLE</button>
+<button class="mode" id="mEclate" onclick="setMode('eclate')">ECLATE</button>
+<button class="mode" id="mTrans" onclick="setMode('trans')">TRANSPARENCE</button>
+<button class="mode" id="mLigne" onclick="setMode('ligne')">LIGNE COMPLETE</button>
+</div>
+<div id="dots">● ● ● ● ● ● ●</div>
+
+<div id="nav">
+<button class="nbtn" onclick="prevStep()">← RETOUR</button>
+<button class="nbtn" onclick="alert('MENUS: 1-Armar 2-Ver motor 3-Acelerar')">MENUS</button>
+<button class="nbtn yellow" onclick="toggleView()">VUE EXT</button>
+<button class="nbtn green" id="departBtn" onclick="depart()">DEPART</button>
+</div>
+
+<div id="controls">
+<button class="cbtn" onclick="rotate(-0.3)">◀</button>
+<button class="cbtn" onclick="toggleWarning()">⚠️</button>
+<button class="cbtn" onclick="rotate(0.3)">▶</button>
+<button class="cbtn" style="flex:1" onclick="rotate(-0.3)">◀ GAUCHE</button>
+<button class="cbtn" style="flex:1" onclick="rotate(0.3)">DROITE ▶</button>
+</div>
+
+<div id="stepBox">
+<div id="stepTitle">PASO 1 / 12 — BLOQUE MOTOR V10</div>
+<div id="stepDesc">Lee y coloca la pieza. Empieza por la base: bloque en V a 90° en aluminio. Sin esto no hay donde montar nada.</div>
+<div id="bar"><div id="fill"></div></div>
+<button id="stepBtn" onclick="nextStep()">➕ COLOCAR PIEZA</button>
+</div>
+
+<div id="dash">
+<div class="gear">
+<button onclick="setGear('P')" id="gP" class="sel">P</button>
+<button onclick="setGear('R')" id="gR">R</button>
+<button onclick="setGear('N')" id="gN">N</button>
+<button onclick="setGear('D')" id="gD">D</button>
+</div>
+<div class="gear">
+<button onclick="gearDown()">M -</button>
+<button onclick="setGear('M')">M</button>
+<button onclick="gearUp()">M +</button>
+<div style="font-size:11px;color:#aaa;margin-top:4px">MARCHA <b id="marchaTxt" style="color:#fff">P</b></div>
+</div>
+<div id="rpmBox"><div style="font-size:11px;color:#aaa">RPM</div><div id="rpm">0</div><div id="speed">0 km/h • NORMAL</div><div style="margin-top:6px"><button onclick="toggleModeDrive()" style="background:#222;color:#fff;border:1px solid #555;border-radius:8px;padding:6px 10px">NORMAL</button></div></div>
+</div>
+
+<div id="msg">Arma el motor paso a paso. Al 100% se desbloquea DEPART y GAZ.</div>
+
+<div id="pedals">
+<div class="pedal" id="feu" onpointerdown="feu()" onpointerup="feuOff()">FEU<br><small>Luces</small></div>
+<div class="pedal" id="frein" onpointerdown="brake(1)" onpointerup="brake(0)">FREIN<br><small>Freno</small></div>
+<div class="pedal" id="gaz" onpointerdown="gas(1)" onpointerup="gas(0)" onpointerleave="gas(0)">GAZ<br><small>ACELERAR - Mantén</small></div>
+</div>
+
+<script>
+let canvas=document.getElementById('eng'), ctx=canvas.getContext('2d');
+let rot=0, viewExt=false, mode='assemble', transparent=false, eclate=false;
+let step=0, rpm=0, speed=0, gear='P', marcha=0, started=false, gasOn=0, brakeOn=0, feuOn=false, warn=false;
+let crank=0;
+const STEPS=[
+["BLOQUE MOTOR V10","Base: bloque en V a 90° en aluminio. Sin esto no hay donde montar nada."],
+["CIGÜEÑAL","Cigüeñal de acero forjado. Gira y convierte el empuje de los pistones en giro."],
+["PISTONES x10 + BIELAS x10","10 pistones de aluminio + 10 bielas. 5 por cada lado de la V."],
+["CULATAS x2","2 culatas de aluminio, una por cada banco. Aquí van las válvulas."],
+["ÁRBOLES DE LEVAS x4","4 árboles de levas DOHC, 2 por culata. Abren y cierran las válvulas."],
+["VÁLVULAS x40","40 válvulas de titanio, 4 por cilindro: 2 admisión + 2 escape."],
+["BUJÍAS x10 + BOBINAS x10","10 bujías + 10 bobinas. Una por cilindro, hacen la chispa."],
+["INYECTORES x10","10 inyectores. Meten la gasolina exacta en cada cilindro."],
+["COLECTORES","Colector de admisión + 2 colectores de escape. Entra aire, sale humo."],
+["CÁRTER + BOMBAS","Cárter + bomba de aceite + bomba de agua. Lubrica y enfría."],
+["DISTRIBUCIÓN + ALTERNADOR","Cadena de distribución + alternador + tapas de válvulas. Todo sincronizado."],
+["CUERPO ACELERACIÓN + ECU + VOLANTE","Cuerpo de aceleración + ECU + volante de inercia. ¡Motor listo!"]
+];
+function resize(){let r=canvas.parentElement.getBoundingClientRect();canvas.width=r.width*2;canvas.height=r.height*2;canvas.style.width=r.width+'px';canvas.style.height=r.height+'px';}
+addEventListener('resize',resize);resize();
+function setMode(m){mode=m;transparent=(m==='trans');eclate=(m==='eclate');document.querySelectorAll('.mode').forEach(b=>b.classList.remove('on'));if(m==='assemble')document.getElementById('mAssemble').classList.add('on');if(m==='eclate')document.getElementById('mEclate').classList.add('on');if(m==='trans')document.getElementById('mTrans').classList.add('on');if(m==='ligne')document.getElementById('mLigne').classList.add('on');if(m==='ligne'){step=STEPS.length;updateStep();}}
+function toggleView(){viewExt=!viewExt;document.getElementById('msg').textContent=viewExt?'VUE EXT: Vista exterior':'VUE EXT: Vista normal';}
+function rotate(d){rot+=d;}
+function toggleWarning(){warn=!warn;document.getElementById('msg').textContent=warn?'⚠️ REVISA EL MOTOR':'Sin alertas';}
+function updateStep(){let pct=Math.round(step/STEPS.length*100);document.getElementById('fill').style.width=pct+'%';if(step>=STEPS.length){document.getElementById('stepTitle').textContent='✅ MOTOR V10 COMPLETO - 100%';document.getElementById('stepDesc').textContent='Ya tienes las '+STEPS.length+' piezas. Pulsa DEPART, pon D y mantén GAZ para acelerar.';document.getElementById('stepBtn').textContent='MOTOR LISTO - ACELERA ABAJO';document.getElementById('stepBtn').disabled=true;document.getElementById('msg').textContent='Motor listo. DEPART -> D -> GAZ';}else{document.getElementById('stepTitle').textContent='PASO '+(step+1)+' / '+STEPS.length+' — '+STEPS[step][0];document.getElementById('stepDesc').textContent=STEPS[step][1];}}
+function nextStep(){if(step<STEPS.length){step++;updateStep();}}
+function prevStep(){if(step>0){step--;updateStep();document.getElementById('stepBtn').disabled=false;}}
+function setGear(g){gear=g;['P','R','N','D'].forEach(x=>document.getElementById('g'+x).className='');if(g==='P')document.getElementById('gP').className='sel';if(g==='R')document.getElementById('gR').className='selR';if(g==='N')document.getElementById('gN').className='sel';if(g==='D')document.getElementById('gD').className='sel';document.getElementById('marchaTxt').textContent=g;if(g==='D'&&started)marcha=1;if(g==='P')marcha=0;}
+function gearUp(){if(gear==='D'||gear==='M'){gear='M';marcha=Math.min(7,marcha+1);document.getElementById('marchaTxt').textContent=marcha;}}
+function gearDown(){if(gear==='D'||gear==='M'){gear='M';marcha=Math.max(1,marcha-1);document.getElementById('marchaTxt').textContent=marcha;}}
+function toggleModeDrive(){document.getElementById('speed').textContent=Math.round(speed)+' km/h • SPORT';}
+function depart(){if(step<STEPS.length){alert('Primero arma el motor completo, te falta '+(STEPS.length-step)+' piezas');return;}started=true;rpm=900;document.getElementById('msg').textContent='Motor encendido. Pon D y mantén GAZ';}
+function gas(v){gasOn=v;if(!started||step<STEPS.length){document.getElementById('msg').textContent='Primero arma el motor y pulsa DEPART';return;}}
+function brake(v){brakeOn=v;}
+function feu(){feuOn=!feuOn;document.getElementById('feu').style.background=feuOn?'#ffcc00':'#330000';document.getElementById('msg').textContent=feuOn?'FEU encendido':'FEU apagado';}
+function feuOff(){}
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  let cx=canvas.width/2, cy=canvas.height*0.55, R=Math.min(canvas.width,canvas.height)*0.32;
+  let exp=eclate?1:0;
+  // Bancos V
+  if(step>=1){
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(rot*0.2);
+    ctx.fillStyle=transparent?'rgba(120,120,120,0.25)':'#3a3f45';ctx.strokeStyle='#00ff88';ctx.lineWidth=2;
+    // Bloque V
+    ctx.beginPath();ctx.moveTo(-R*0.9,R*0.7);ctx.lineTo(-R*0.2,-R*0.1);ctx.lineTo(0,R*0.3);ctx.lineTo(R*0.2,-R*0.1);ctx.lineTo(R*0.9,R*0.7);ctx.closePath();ctx.fill();ctx.stroke();
+    // Cigüeñal
+    if(step>=2){ctx.fillStyle='#aaa';ctx.beginPath();ctx.arc(0,R*0.3,R*0.22,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.beginPath();ctx.moveTo(0,R*0.3);ctx.lineTo(Math.cos(crank)*R*0.22,R*0.3+Math.sin(crank)*R*0.22);ctx.stroke();}
+    // Pistones 5+5
+    if(step>=3){
+      for(let i=0;i<5;i++){
+        for(let s=-1;s<=1;s+=2){
+          let t=(crank+i*0.72+s*0.4);
+          let off=Math.sin(t)*R*0.18;
+          let bx=s*R*0.45, by=-R*0.15 - i*R*0.06;
+          let px=bx + s*off*0.6, py=by - off*0.6 + exp*s*30;
+          ctx.fillStyle='#ddd';ctx.fillRect(px-14,py-10,28,20);
+          ctx.fillStyle='#00ff88';ctx.font='bold 12px Arial';ctx.fillText('P'+(i+1+(s>0?5:0)),px-8,py+4);
+          ctx.strokeStyle='#888';ctx.beginPath();ctx.moveTo(px,py+10);ctx.lineTo(0,R*0.3);ctx.stroke();
+        }
+      }
+    }
+    // Culatas
+    if(step>=4){ctx.fillStyle=transparent?'rgba(0,255,136,0.2)':'#222';ctx.fillRect(-R*1.05,-R*0.55,R*0.55,R*0.3);ctx.fillRect(R*0.5,-R*0.55,R*0.55,R*0.3);}
+    // Levas / válvulas
+    if(step>=5){ctx.fillStyle='#ffcc00';for(let i=0;i<4;i++){ctx.beginPath();ctx.arc(-R*0.8+i*R*0.15,-R*0.4,6,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(R*0.55+i*R*0.15,-R*0.4,6,0,Math.PI*2);ctx.fill();}}
+    if(step>=6){ctx.fillStyle='#fff';ctx.font='10px Arial';ctx.fillText('40 VÁLVULAS',-40,-R*0.65);}
+    if(step>=7){ctx.fillStyle='#ff6600';ctx.fillText('10 BUJÍAS',-40,R*0.05);}
+    if(step>=8){ctx.fillStyle='#00ccff';ctx.fillText('10 INYECTORES',-50,R*0.22);}
+    if(step>=9){ctx.fillStyle='#888';ctx.fillRect(-R*0.2,-R*0.85,R*0.4,R*0.25);ctx.fillText('ADMISIÓN',-30,-R*0.88);}
+    if(step>=10){ctx.fillStyle='#555';ctx.fillRect(-R*0.7,R*0.65,R*1.4,18);}
+    if(step>=11){ctx.fillStyle='#fff';ctx.fillText('DISTRIBUCIÓN + ALTERNADOR',-80,R*0.95);}
+    if(step>=12){ctx.fillStyle='#00ff88';ctx.font='bold 16px Arial';ctx.fillText('V10 ✅',-30,-R*0.95);}
+    ctx.restore();
+  } else {
+    ctx.fillStyle='#666';ctx.font='20px Arial';ctx.textAlign='center';ctx.fillText('MOTOR VACÍO',cx,cy);ctx.font='13px Arial';ctx.fillText('Pulsa COLOCAR PIEZA para empezar',cx,cy+30);ctx.textAlign='left';
+  }
+  // Fuego / luces
+  if(feuOn){ctx.fillStyle='rgba(255,255,0,0.25)';ctx.fillRect(0,0,canvas.width,canvas.height);}
+  if(warn){ctx.fillStyle='red';ctx.font='bold 22px Arial';ctx.fillText('⚠️',20,40);}
+  // RPM
+  if(started){
+    if(gasOn&&gear==='D')rpm=Math.min(8700,rpm+60);else if(gasOn&&gear==='P')rpm=Math.min(4000,rpm+80);else rpm=Math.max(900,rpm-40);
+    if(brakeOn){rpm=Math.max(900,rpm-120);speed=Math.max(0,speed-3);} else if(gasOn&&gear==='D')speed=Math.min(280,speed+1.2);else speed=Math.max(0,speed-0.4);
+    crank+=rpm/6000*0.35;
+  }
+  document.getElementById('rpm').textContent=Math.round(rpm);
+  document.getElementById('speed').textContent=Math.round(speed)+' km/h • '+(gear==='D'?'D'+(marcha||1):gear);
+  requestAnimationFrame(draw);
+}
+draw();
+updateStep();
+</script>
+</body>
+  </html>
