@@ -109,18 +109,18 @@ let canvas=document.getElementById('eng'), ctx=canvas.getContext('2d');
 let rot=0, transparent=false, eclate=false;
 let step=0, rpm=0, speed=0, gear='P', marcha=0, started=false, gasOn=0, brakeOn=0, feuOn=false, warn=false, crank=0;
 const STEPS=[
-["BLOQUE MOTOR V10","Base: bloque en V a 90° en aluminio. Sin esto no hay donde montar nada."],
-["CIGÜEÑAL","Cigüeñal de acero forjado. Gira y convierte el empuje en giro."],
-["PISTONES x10 + BIELAS x10","10 pistones + 10 bielas. 5 por cada lado de la V, se ven 5 de frente."],
-["CULATAS x2","2 culatas de aluminio, una por cada banco."],
-["ÁRBOLES DE LEVAS x4","4 árboles de levas DOHC, 2 por culata."],
-["VÁLVULAS x40","40 válvulas, 4 por cilindro: 2 admisión + 2 escape."],
-["BUJÍAS x10 + BOBINAS x10","10 bujías + 10 bobinas. Una por cilindro."],
-["INYECTORES x10","10 inyectores. Meten la gasolina exacta."],
-["COLECTORES","Colector de admisión arriba + 2 de escape a los lados."],
-["CÁRTER + BOMBAS","Cárter abajo + bomba de aceite + bomba de agua."],
-["DISTRIBUCIÓN + ALTERNADOR","Cadena de distribución + alternador + tapas."],
-["CUERPO ACELERACIÓN + ECU + VOLANTE","Cuerpo de aceleración + ECU + volante. ¡Motor listo!"]
+["BLOQUE MOTOR V10","Base: bloque en V a 90° en aluminio."],
+["CIGÜEÑAL","Cigüeñal de acero forjado."],
+["PISTONES x10 + BIELAS x10","10 pistones + 10 bielas. 5 por cada lado de la V."],
+["CULATAS x2","2 culatas de aluminio."],
+["ÁRBOLES DE LEVAS x4","4 árboles de levas DOHC."],
+["VÁLVULAS x40","40 válvulas, 4 por cilindro."],
+["BUJÍAS x10 + BOBINAS x10","10 bujías + 10 bobinas."],
+["INYECTORES x10","10 inyectores."],
+["COLECTORES","Colector de admisión + 2 de escape."],
+["CÁRTER + BOMBAS","Cárter + bomba de aceite + bomba de agua."],
+["DISTRIBUCIÓN + ALTERNADOR","Cadena + alternador + tapas."],
+["CUERPO ACELERACIÓN + ECU + VOLANTE","Cuerpo + ECU + volante. ¡Motor listo!"]
 ];
 function resize(){let r=canvas.parentElement.getBoundingClientRect();canvas.width=r.width*2;canvas.height=r.height*2;canvas.style.width=r.width+'px';canvas.style.height=r.height+'px';}
 addEventListener('resize',resize);resize();
@@ -142,106 +142,99 @@ function feu(){feuOn=!feuOn;document.getElementById('feu').style.background=feuO
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   let W=canvas.width, H=canvas.height;
-  // MOTOR DE LADO - LARGO Y HORIZONTAL COMO EN LA FOTO, NO TRIÁNGULO
-  let ex=W*0.08, ey=H*0.22, ew=W*0.84, eh=H*0.52;
-  let crankY=ey+eh*0.78;
+  let ex=W*0.08, ey=H*0.18, ew=W*0.84, eh=H*0.58;
+  let crankY=ey+eh*0.82;
   let cylW=ew/5;
 
   if(step<1){
     ctx.fillStyle='#666';ctx.font='bold 32px Arial';ctx.textAlign='center';
     ctx.fillText('MOTOR VACÍO',W/2,H/2);ctx.font='20px Arial';ctx.fillText('Pulsa COLOCAR PIEZA',W/2,H/2+40);ctx.textAlign='left';
   } else {
-    ctx.save();
-    ctx.translate(rot*20,0);
+    ctx.save();ctx.translate(rot*20,0);
+    let sepY = eclate? 26:0;
 
-    // ECLATE: separa un poco las capas
-    let sepY = eclate? 28:0;
-
-    // 1. COLECTOR ADMISIÓN - arriba, largo
-    if(step>=9){
-      ctx.fillStyle='#1f2937';ctx.strokeStyle='#00ff88';ctx.lineWidth=2;
-      ctx.beginPath();ctx.roundRect(ex+ew*0.08, ey-sepY-52, ew*0.84, 34, 10);ctx.fill();ctx.stroke();
-      ctx.fillStyle='#00ff88';ctx.font='bold 16px Arial';ctx.textAlign='center';ctx.fillText('ADMISIÓN',ex+ew/2,ey-sepY-30);
-    }
-    // 2. TAPAS / CULATAS - dos rectángulos largos arriba
     if(step>=4){
       ctx.fillStyle=transparent?'rgba(0,255,136,0.25)':'#374151';
-      ctx.fillRect(ex, ey-sepY, ew, 26);
-      ctx.fillStyle='#9ca3af';ctx.fillRect(ex, ey-sepY+26, ew, 6);
-      if(step>=5){
-        ctx.fillStyle='#ffcc00';
-        for(let i=0;i<5;i++){ctx.beginPath();ctx.arc(ex+cylW*i+cylW/2, ey-sepY+13, 7,0,Math.PI*2);ctx.fill();}
-      }
-      if(step>=6){ctx.fillStyle='#fff';ctx.font='bold 14px Arial';ctx.fillText('CULATAS • 40 VÁLVULAS',ex+ew/2,ey-sepY+18);}
+      ctx.fillRect(ex, ey-sepY, ew, 24);
+      ctx.fillStyle='#9ca3af';ctx.fillRect(ex, ey-sepY+24, ew, 5);
+      if(step>=5){ctx.fillStyle='#ffcc00';for(let i=0;i<5;i++){ctx.beginPath();ctx.arc(ex+cylW*i+cylW/2, ey-sepY+12, 6,0,Math.PI*2);ctx.fill();}}
+      if(step>=6){ctx.fillStyle='#fff';ctx.font='bold 13px Arial';ctx.textAlign='center';ctx.fillText('CULATAS • 40 VÁLVULAS',ex+ew/2,ey-sepY+17);}
     }
-    // 3. BLOQUE - rectángulo grande metálico, NO triángulo
+
     ctx.fillStyle=transparent?'rgba(160,160,160,0.22)':'#6b7280';
     ctx.strokeStyle='#00ff88';ctx.lineWidth=2;
-    ctx.beginPath();ctx.roundRect(ex, ey+32, ew, eh*0.58, 8);ctx.fill();ctx.stroke();
-    // Líneas de cilindros
-    ctx.strokeStyle='rgba(0,0,0,0.35)';ctx.lineWidth=1;
-    for(let i=1;i<5;i++){ctx.beginPath();ctx.moveTo(ex+cylW*i, ey+32);ctx.lineTo(ex+cylW*i, ey+32+eh*0.58);ctx.stroke();}
+    ctx.beginPath();ctx.roundRect(ex, ey+29, ew, eh*0.62, 8);ctx.fill();ctx.stroke();
 
-    // 4. PISTONES + BIELAS - 5 visibles de frente, suben y bajan
+    // *** CORREGIDO: EL CILINDRO SE HACE DEL TAMAÑO DEL PISTÓN ***
+    // 1. Primero definimos el pistón con su tamaño fijo
+    let pistW = cylW*0.62; // tamaño del pistón, este manda
+    let pistH = 36; // alto del pistón, este manda
+    let travelMax = 14; // lo que sube y baja
+    // 2. El cilindro se hace JUSTO del tamaño del pistón
+    let boreW = pistW + 2; // solo 2px más ancho para que resbale, como en un motor real
+    let cylH = pistH + travelMax*2 + 6; // solo lo que necesita para moverse, sin espacio de más
+    let cylTop = ey+42;
+
     if(step>=3){
       for(let i=0;i<5;i++){
-        let px=ex+cylW*i+cylW/2;
-        let a=crank + i*1.256; // 72° entre cilindros V10
-        let travel=Math.sin(a)*22;
-        let py=ey+58+travel + (eclate? -20:0);
-        let pinX=px+Math.cos(a)*18;
-        let pinY=crankY+Math.sin(a)*18;
-        // Biela recta
-        ctx.strokeStyle='#e5e7eb';ctx.lineWidth=7;
-        ctx.beginPath();ctx.moveTo(px,py+22);ctx.lineTo(pinX,pinY);ctx.stroke();
-        // Pistón
+        let cxC = ex + cylW*i + cylW/2;
+        // Cilindro del tamaño del pistón
+        ctx.fillStyle='#1f2937';
+        ctx.fillRect(cxC-boreW/2, cylTop, boreW, cylH);
+        ctx.strokeStyle='#000';ctx.lineWidth=1;
+        ctx.strokeRect(cxC-boreW/2, cylTop, boreW, cylH);
+        ctx.fillStyle='#374151';
+        ctx.fillRect(cxC-boreW/2+1, cylTop+1, boreW-2, cylH-2);
+
+        let a = crank + i*1.256;
+        let travel = Math.sin(a)*travelMax;
+        let py = cylTop + 3 + travel + (eclate? -14:0);
+        let pinY = crankY + Math.sin(a)*10;
+        // Biela vertical recta
+        ctx.strokeStyle='#e5e7eb';ctx.lineWidth=6;
+        ctx.beginPath();ctx.moveTo(cxC, py+pistH);ctx.lineTo(cxC, pinY);ctx.stroke();
+        // Pistón - llena casi todo el cilindro, sin huecos
         ctx.fillStyle='#f3f4f6';ctx.strokeStyle='#111';ctx.lineWidth=1;
-        ctx.fillRect(px-32,py,64,36);ctx.strokeRect(px-32,py,64,36);
-        ctx.fillStyle='#00ff88';ctx.fillRect(px-32,py,64,7);
-        ctx.fillStyle='#111';ctx.font='bold 14px Arial';ctx.textAlign='center';ctx.fillText('P'+(i+1),px,py+24);
-        // Bujía / inyector encima
-        if(step>=7){ctx.fillStyle='#ff6600';ctx.fillRect(px-3,ey+28,6,14);}
-        if(step>=8){ctx.fillStyle='#00ccff';ctx.fillRect(px+14,ey+32,10,10);}
+        ctx.fillRect(cxC-pistW/2, py, pistW, pistH);
+        ctx.strokeRect(cxC-pistW/2, py, pistW, pistH);
+        ctx.fillStyle='#00ff88';ctx.fillRect(cxC-pistW/2, py+3, pistW, 4);
+        ctx.fillStyle='#111';ctx.fillRect(cxC-pistW/2, py+13, pistW, 2);
+        ctx.fillRect(cxC-pistW/2, py+21, pistW, 2);
+        ctx.fillStyle='#111';ctx.font='bold 13px Arial';ctx.textAlign='center';ctx.fillText('P'+(i+1),cxC,py+29);
+        if(step>=7){ctx.fillStyle='#ff6600';ctx.fillRect(cxC-3,cylTop-8,6,10);}
+        if(step>=8){ctx.fillStyle='#00ccff';ctx.fillRect(cxC+16,cylTop+4,8,8);}
       }
-      ctx.fillStyle='#fff';ctx.font='12px Arial';ctx.fillText('5 CILINDROS ADELANTE + 5 ATRÁS = V10',ex+ew/2,ey+eh*0.62);
+      ctx.fillStyle='#fff';ctx.font='12px Arial';ctx.textAlign='center';ctx.fillText('5 CILINDROS ADELANTE + 5 ATRÁS = V10',ex+ew/2, cylTop+cylH+16);
+    } else {
+      for(let i=0;i<5;i++){
+        let cxC = ex + cylW*i + cylW/2;
+        ctx.fillStyle='#1f2937';ctx.fillRect(cxC-boreW/2, cylTop, boreW, cylH);
+        ctx.strokeStyle='#000';ctx.strokeRect(cxC-boreW/2, cylTop, boreW, cylH);
+      }
     }
 
-    // 5. CIGÜEÑAL - eje horizontal abajo
     if(step>=2){
-      ctx.fillStyle='#d1d5db';ctx.fillRect(ex-10,crankY-12,ew+20,24);
-      ctx.fillStyle='#111';ctx.beginPath();ctx.arc(ex-10,crankY,10,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#111';ctx.beginPath();ctx.arc(ex+ew+10,crankY,10,0,Math.PI*2);ctx.fill();
-      // Polea delantera que gira
-      ctx.fillStyle='#eee';ctx.beginPath();ctx.arc(ex-38,crankY,30,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#00ff88';ctx.stroke();
-      ctx.strokeStyle='#111';ctx.beginPath();ctx.moveTo(ex-38,crankY);ctx.lineTo(ex-38+Math.cos(crank)*30,crankY+Math.sin(crank)*30);ctx.stroke();
-      ctx.fillStyle='#fff';ctx.font='bold 12px Arial';ctx.fillText('POLEA',ex-38,crankY+48);
-      // Volante trasero
-      ctx.fillStyle='#eee';ctx.beginPath();ctx.arc(ex+ew+38,crankY,30,0,Math.PI*2);ctx.fill();ctx.stroke();
-      ctx.fillStyle='#fff';ctx.fillText('VOLANTE',ex+ew+38,crankY+48);
-      ctx.fillStyle='#fff';ctx.font='bold 14px Arial';ctx.fillText('CIGÜEÑAL',ex+ew/2,crankY+4);
+      ctx.fillStyle='#d1d5db';ctx.fillRect(ex-10,crankY-11,ew+20,22);
+      ctx.fillStyle='#111';ctx.beginPath();ctx.arc(ex-10,crankY,9,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(ex+ew+10,crankY,9,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#eee';ctx.beginPath();ctx.arc(ex-36,crankY,28,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#00ff88';ctx.stroke();
+      ctx.strokeStyle='#111';ctx.beginPath();ctx.moveTo(ex-36,crankY);ctx.lineTo(ex-36+Math.cos(crank)*28,crankY+Math.sin(crank)*28);ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 11px Arial';ctx.textAlign='center';ctx.fillText('POLEA',ex-36,crankY+44);
+      ctx.fillStyle='#eee';ctx.beginPath();ctx.arc(ex+ew+36,crankY,28,0,Math.PI*2);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#fff';ctx.fillText('VOLANTE',ex+ew+36,crankY+44);
+      ctx.fillStyle='#fff';ctx.font='bold 13px Arial';ctx.fillText('CIGÜEÑAL',ex+ew/2,crankY+3);
     }
-
-    // 6. CÁRTER - abajo
     if(step>=10){
-      ctx.fillStyle='#111827';ctx.beginPath();ctx.roundRect(ex+10, ey+eh*0.92, ew-20, 28, 8);ctx.fill();
-      ctx.fillStyle='#aaa';ctx.font='12px Arial';ctx.fillText('CÁRTER • ACEITE',ex+ew/2,ey+eh*0.92+18);
+      ctx.fillStyle='#111827';ctx.beginPath();ctx.roundRect(ex+10, ey+eh*0.96, ew-20, 26, 8);ctx.fill();
+      ctx.fillStyle='#aaa';ctx.font='11px Arial';ctx.textAlign='center';ctx.fillText('CÁRTER • ACEITE',ex+ew/2,ey+eh*0.96+16);
     }
-    // 7. ESCAPE - tubos laterales
-    if(step>=9){
-      ctx.fillStyle='#7c2d12';ctx.fillRect(ex-6,ey+80,10,90);ctx.fillRect(ex+ew-4,ey+80,10,90);
-    }
-    // 8. ALTERNADOR / DISTRIBUCIÓN
+    if(step>=9){ctx.fillStyle='#7c2d12';ctx.fillRect(ex-6,ey+80,10,90);ctx.fillRect(ex+ew-4,ey+80,10,90);}
     if(step>=11){
-      ctx.fillStyle='#facc15';ctx.beginPath();ctx.arc(ex+ew*0.85,ey+eh*0.78,18,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#111';ctx.font='bold 10px Arial';ctx.fillText('ALT',ex+ew*0.85,ey+eh*0.78+3);
-    }
-    if(step>=12){
-      ctx.fillStyle='#00ff88';ctx.font='bold 22px Arial';ctx.fillText('V10 ✅ COMPLETO',ex+ew/2,ey-70);
-      ctx.fillStyle='#fff';ctx.font='14px Arial';ctx.fillText('ECU + CUERPO ACELERACIÓN',ex+ew/2,ey-48);
+      ctx.fillStyle='#facc15';ctx.beginPath();ctx.arc(ex+ew*0.85,crankY,16,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#111';ctx.font='bold 10px Arial';ctx.textAlign='center';ctx.fillText('ALT',ex+ew*0.85,crankY+3);
     }
     ctx.restore();
   }
-
   if(feuOn){ctx.fillStyle='rgba(255,255,0,0.12)';ctx.fillRect(0,0,W,H);}
   if(warn){ctx.fillStyle='red';ctx.font='bold 30px Arial';ctx.fillText('⚠️',30,50);}
   if(started){
@@ -256,4 +249,4 @@ function draw(){
 draw();updateStep();
 </script>
 </body>
-                                                                         </html>
+  </html>
