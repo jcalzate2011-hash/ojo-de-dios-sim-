@@ -7,203 +7,182 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#000;color:#fff;font-family:Arial;overflow:hidden;height:100vh}
 
-/* BOTON FLOTANTE VERDE */
 #btnFlotante{
-  position:fixed;
-  left:60px; top:250px;
-  width:62px; height:62px;
-  background:#00ff88;
-  color:#000;
-  border:none;
-  border-radius:50%;
-  font-size:28px;
-  font-weight:900;
-  z-index:1000;
-  box-shadow:0 0 20px rgba(0,255,136,.8);
-  touch-action:none;
-  user-select:none;
-  -webkit-user-select:none;
+  position:fixed; left:60px; top:250px;
+  width:62px; height:62px; background:#00ff88; color:#000; border:none; border-radius:50%;
+  font-size:28px; font-weight:900; z-index:1000; box-shadow:0 0 20px rgba(0,255,136,.8);
+  touch-action:none; user-select:none; -webkit-user-select:none;
 }
 
-/* MENU DE FUNCIONES - FLOTANTE Y MOVIBLE */
+#contMenu{position:fixed; left:60px; top:340px; display:none; z-index:999; touch-action:none}
+
 #menuFlotante{
-  position:fixed;
-  left:60px; top:340px;
-  width:280px;
-  background:#1a1a1a;
-  border:1px solid #333;
-  border-radius:18px;
-  padding:12px;
-  display:none;
-  z-index:999;
-  touch-action:none;
-  box-shadow:0 10px 30px rgba(0,0,0,.8);
+  width:280px; background:#1a1a1a; border:1px solid #333; border-radius:18px;
+  padding:12px; box-shadow:0 10px 30px rgba(0,0,0,.8);
+}
+#cabeceraMenu{
+  display:flex; align-items:center; gap:8px; padding:4px 4px 12px 4px;
+  cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none;
+}
+#cabeceraMenu b{font-size:17px; letter-spacing:1px; color:#00ff88}
+#miniCerrar{
+  width:30px; height:30px; background:#00ff88; color:#000; border:none; border-radius:50%;
+  font-size:16px; font-weight:900; flex-shrink:0;
 }
 
-/* CABECERA PARA MOVER EL MENU */
-#cabeceraMenu{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:4px 4px 10px 4px;
-  cursor:grab;
-  touch-action:none;
-  user-select:none;
-  -webkit-user-select:none;
+/* BOTONES LATERALES DERECHOS */
+#barraLateral{
+  position:absolute; top:60px; left:100%;
+  display:flex; flex-direction:column; gap:10px; margin-left:10px;
 }
-#cabeceraMenu:active{cursor:grabbing}
-#miniCerrar{
-  width:30px; height:30px;
-  background:#00ff88;
-  color:#000;
-  border:none;
-  border-radius:50%;
-  font-size:16px;
-  font-weight:900;
-  flex-shrink:0;
+.btnTab{
+  width:52px; height:52px; background:#222; border:1px solid #444; border-radius:14px;
+  color:#888; display:flex; align-items:center; justify-content:center; cursor:pointer;
 }
-#cabeceraMenu b{font-size:15px;letter-spacing:1px}
-#cabeceraMenu span{font-size:11px;color:#888;margin-left:auto}
+.btnTab svg{width:26px; height:26px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round}
+.btnTab.activo{background:#00ff88; color:#000; border-color:#00ff88; box-shadow:0 0 15px rgba(0,255,136,.6)}
 
 .fila{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  background:#222;
-  border:1px solid #444;
-  border-radius:12px;
-  padding:12px;
-  margin:6px 0;
+  display:flex; align-items:center; justify-content:space-between;
+  background:#222; border:1px solid #444; border-radius:12px; padding:12px; margin:6px 0;
 }
-.fila.activo{border-color:#00ff88;background:#123324}
-.fila span{font-size:13px;font-weight:700}
-.estado{font-size:11px;padding:4px 9px;border-radius:20px;background:#444;color:#fff;margin-top:3px;display:inline-block}
-.fila.activo .estado{background:#00ff88;color:#000}
-
-.switch{position:relative;width:48px;height:26px;background:#555;border-radius:30px;flex-shrink:0}
-.switch::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:.2s}
+.fila.activo{border-color:#00ff88; background:#123324}
+.fila span{font-size:13px; font-weight:700}
+.estado{font-size:11px; padding:4px 9px; border-radius:20px; background:#444; color:#fff; margin-top:3px; display:inline-block}
+.fila.activo .estado{background:#00ff88; color:#000}
+.switch{position:relative; width:48px; height:26px; background:#555; border-radius:30px; flex-shrink:0}
+.switch::after{content:""; position:absolute; top:3px; left:3px; width:20px; height:20px; background:#fff; border-radius:50%; transition:.2s}
 .switch.on{background:#00ff88}
 .switch.on::after{left:25px}
+
+/* INFO CASITA */
+.infoFila{display:flex; justify-content:space-between; padding:14px 6px; border-bottom:1px solid #2a2a2a; font-size:14px}
+.infoFila:last-child{border-bottom:none}
+.infoFila b{color:#fff; font-weight:700}
+.infoFila span{color:#00ff88; font-weight:700; text-align:right}
 </style>
 </head>
 <body>
 
 <button id="btnFlotante">☰</button>
 
-<div id="menuFlotante">
-  <!-- CABECERA MOVIBLE + MINI BOTON PARA CERRAR -->
-  <div id="cabeceraMenu">
-    <button id="miniCerrar">☰</button>
-    <b>MENÚ</b>
-    <span>↕ mover</span>
+<div id="contMenu">
+  <div id="menuFlotante">
+    <div id="cabeceraMenu">
+      <button id="miniCerrar">☰</button>
+      <b>AKIM MODS</b>
+    </div>
+
+    <!-- PESTAÑA 1: CASITA / INFO -->
+    <div id="panelCasa">
+      <div class="infoFila"><b>Juego</b><span>LEANGUE MAX</span></div>
+      <div class="infoFila"><b>Tipo</b><span>MOD MENÚ</span></div>
+      <div class="infoFila"><b>Espira</b><span>0</span></div>
+      <div class="infoFila"><b>Creador</b><span>AKIM MODS</span></div>
+    </div>
+
+    <!-- PESTAÑA 2: BALA / OPCIONES -->
+    <div id="panelBala" style="display:none"></div>
+
+    <!-- PESTAÑA 3: OJO / HOLOGRAMAS -->
+    <div id="panelOjo" style="display:none"></div>
   </div>
 
-  <div id="contenedorOpciones"></div>
+  <!-- 3 BOTONES A LA DERECHA -->
+  <div id="barraLateral">
+    <!-- 1 CASITA - seria, lineas simples -->
+    <div class="btnTab activo" id="tabCasa" title="Inicio">
+      <svg viewBox="0 0 24 24"><path d="M3 11 L12 3 L21 11"/><path d="M5 10 V20 H19 V10"/><path d="M9 20 V14 H15 V20"/></svg>
+    </div>
+    <!-- 2 BALA - seria, no infantil -->
+    <div class="btnTab" id="tabBala" title="Opciones">
+      <svg viewBox="0 0 24 24"><path d="M12 2 C14 5 16 7 16 10 C16 13 14 16 12 22 C10 16 8 13 8 10 C8 7 10 5 12 2 Z"/><path d="M12 10 L12 16"/></svg>
+    </div>
+    <!-- 3 OJO - serio, no emoji -->
+    <div class="btnTab" id="tabOjo" title="Holograma">
+      <svg viewBox="0 0 24 24"><path d="M2 12 C5 6 9 4 12 4 C15 4 19 6 22 12 C19 18 15 20 12 20 C9 20 5 18 2 12 Z"/><circle cx="12" cy="12" r="3.2"/></svg>
+    </div>
+  </div>
 </div>
 
 <script>
-// LISTA DE OPCIONES - SOLO VISUAL, NO CONECTA CON NINGUN JUEGO
-const opciones = [
-  "ESP FOV",
-  "ESP LÍNEA",
-  "ESP VIDA",
-  "GHOST",
-  "UNDER MAP",
-  "AIM",
-  "CAMBIO RÁPIDO"
-];
+let btn = document.getElementById('btnFlotante');
+let contMenu = document.getElementById('contMenu');
+let menuAbierto = false;
+let ultimaPosBtn = {left:60, top:250};
 
-let cont = document.getElementById('contenedorOpciones');
-let estados = {};
+function mostrarPanel(cual){
+  document.getElementById('panelCasa').style.display = cual==='casa' ? 'block':'none';
+  document.getElementById('panelBala').style.display = cual==='bala' ? 'block':'none';
+  document.getElementById('panelOjo').style.display = cual==='ojo' ? 'block':'none';
+  document.getElementById('tabCasa').classList.toggle('activo', cual==='casa');
+  document.getElementById('tabBala').classList.toggle('activo', cual==='bala');
+  document.getElementById('tabOjo').classList.toggle('activo', cual==='ojo');
+}
+document.getElementById('tabCasa').onclick = e => { e.stopPropagation(); mostrarPanel('casa'); };
+document.getElementById('tabBala').onclick = e => { e.stopPropagation(); mostrarPanel('bala'); };
+document.getElementById('tabOjo').onclick = e => { e.stopPropagation(); mostrarPanel('ojo'); };
 
-opciones.forEach(nombre => {
-  estados[nombre] = false;
+// OPCIONES DE LA BALA
+const opciones = ["ESP FOV","ESP LÍNEA","ESP VIDA","GHOST","UNDER MAP","AIM","CAMBIO RÁPIDO"];
+let panelBala = document.getElementById('panelBala');
+opciones.forEach(nombre=>{
   let div = document.createElement('div');
-  div.className = 'fila';
-  div.id = 'fila-' + nombre;
-  div.innerHTML = `<div><span>${nombre}</span><br><span class="estado">OFF</span></div><div class="switch"></div>`;
-  div.onclick = (e) => {
-    e.stopPropagation();
-    estados[nombre] = !estados[nombre];
-    div.classList.toggle('activo', estados[nombre]);
-    div.querySelector('.switch').classList.toggle('on', estados[nombre]);
-    div.querySelector('.estado').textContent = estados[nombre] ? 'ON' : 'OFF';
-  };
-  cont.appendChild(div);
+  div.className='fila';
+  div.innerHTML=`<div><span>${nombre}</span><br><span class="estado">OFF</span></div><div class="switch"></div>`;
+  let activo=false;
+  div.onclick=e=>{ e.stopPropagation(); activo=!activo; div.classList.toggle('activo',activo); div.querySelector('.switch').classList.toggle('on',activo); div.querySelector('.estado').textContent=activo?'ON':'OFF'; };
+  panelBala.appendChild(div);
 });
 
-let btn = document.getElementById('btnFlotante');
-let menu = document.getElementById('menuFlotante');
-let menuAbierto = false;
+// HOLOGRAMAS - SOLO 1 ACTIVO
+const holos = ["HOLOGRAMA AZUL","HOLOGRAMA ROJO","HOLOGRAMA ORIGINAL"];
+let panelOjo = document.getElementById('panelOjo');
+let filasHolo = [];
+holos.forEach(nombre=>{
+  let div = document.createElement('div');
+  div.className='fila';
+  div.innerHTML=`<div><span>${nombre}</span><br><span class="estado">OFF</span></div><div class="switch"></div>`;
+  div.onclick=e=>{
+    e.stopPropagation();
+    // Apaga todas las otras
+    filasHolo.forEach(f=>{
+      if(f!==div){ f.classList.remove('activo'); f.querySelector('.switch').classList.remove('on'); f.querySelector('.estado').textContent='OFF'; }
+    });
+    // Prende solo la que tocaste
+    div.classList.add('activo'); div.querySelector('.switch').classList.add('on'); div.querySelector('.estado').textContent='ON';
+  };
+  filasHolo.push(div);
+  panelOjo.appendChild(div);
+});
 
 function abrirMenu(){
-  // EL MENU SE ABRE JUSTO DONDE ESTA EL BOTON
   let r = btn.getBoundingClientRect();
-  let x = r.left;
-  let y = r.bottom + 10;
-  // Si no cabe abajo, lo abre arriba del boton
-  if(y + 420 > window.innerHeight) y = r.top - 430;
-  if(y < 10) y = 10;
-  // Si no cabe a la derecha, lo corre a la izquierda
-  if(x + 280 > window.innerWidth) x = window.innerWidth - 290;
-  menu.style.left = x + 'px';
-  menu.style.top = y + 'px';
-  menu.style.display = 'block';
-  menuAbierto = true;
+  ultimaPosBtn.left=r.left; ultimaPosBtn.top=r.top;
+  let x=r.left, y=r.bottom+10;
+  if(y+500 > window.innerHeight) y=r.top-520;
+  if(y<10) y=10;
+  if(x+340 > window.innerWidth) x=window.innerWidth-350;
+  contMenu.style.left=x+'px'; contMenu.style.top=y+'px';
+  contMenu.style.display='block'; menuAbierto=true;
+  btn.style.display='none';
+  mostrarPanel('casa'); // ENTRA PRIMERO EN LA CASITA
 }
 function cerrarMenu(){
-  menu.style.display = 'none';
-  menuAbierto = false;
+  contMenu.style.display='none'; menuAbierto=false;
+  btn.style.left=ultimaPosBtn.left+'px'; btn.style.top=ultimaPosBtn.top+'px'; btn.style.display='block';
 }
-function toggleMenu(){
-  if(menuAbierto) cerrarMenu();
-  else abrirMenu();
-}
+document.getElementById('miniCerrar').onclick=e=>{ e.stopPropagation(); cerrarMenu(); };
 
-// MINI BOTON DENTRO DEL MENU PARA CERRAR
-document.getElementById('miniCerrar').onclick = (e) => {
-  e.stopPropagation();
-  cerrarMenu();
-};
-
-// --- MOVER EL BOTON FLOTANTE ---
 let moviendoBtn=false, seMovioBtn=false, sx, sy, bx, by;
-btn.addEventListener('touchstart', e=>{
-  moviendoBtn=true; seMovioBtn=false;
-  let t=e.touches[0]; sx=t.clientX; sy=t.clientY;
-  let r=btn.getBoundingClientRect(); bx=r.left; by=r.top;
-},{passive:false});
-btn.addEventListener('touchmove', e=>{
-  if(!moviendoBtn) return;
-  e.preventDefault();
-  let t=e.touches[0];
-  let dx=t.clientX-sx, dy=t.clientY-sy;
-  if(Math.abs(dx)>8 || Math.abs(dy)>8) seMovioBtn=true;
-  let nx=Math.max(0,Math.min(window.innerWidth-62, bx+dx));
-  let ny=Math.max(0,Math.min(window.innerHeight-62, by+dy));
-  btn.style.left=nx+'px'; btn.style.top=ny+'px';
-},{passive:false});
-btn.addEventListener('touchend', ()=>{
-  moviendoBtn=false;
-  if(!seMovioBtn) toggleMenu();
-});
+btn.addEventListener('touchstart', e=>{ moviendoBtn=true; seMovioBtn=false; let t=e.touches[0]; sx=t.clientX; sy=t.clientY; let r=btn.getBoundingClientRect(); bx=r.left; by=r.top; },{passive:false});
+btn.addEventListener('touchmove', e=>{ if(!moviendoBtn) return; e.preventDefault(); let t=e.touches[0]; let dx=t.clientX-sx, dy=t.clientY-sy; if(Math.abs(dx)>8||Math.abs(dy)>8) seMovioBtn=true; btn.style.left=Math.max(0,Math.min(window.innerWidth-62,bx+dx))+'px'; btn.style.top=Math.max(0,Math.min(window.innerHeight-62,by+dy))+'px'; },{passive:false});
+btn.addEventListener('touchend', ()=>{ moviendoBtn=false; if(!seMovioBtn){ if(menuAbierto) cerrarMenu(); else abrirMenu(); } });
 
-// --- MOVER EL MENU DE FUNCIONES ---
-let cab = document.getElementById('cabeceraMenu');
+let cab=document.getElementById('cabeceraMenu');
 let moviendoMenu=false, mx, my, menX, menY;
-cab.addEventListener('touchstart', e=>{
-  moviendoMenu=true;
-  let t=e.touches[0]; mx=t.clientX; my=t.clientY;
-  let r=menu.getBoundingClientRect(); menX=r.left; menY=r.top;
-},{passive:false});
-cab.addEventListener('touchmove', e=>{
-  if(!moviendoMenu) return;
-  e.preventDefault();
-  let t=e.touches[0];
-  let nx=Math.max(0,Math.min(window.innerWidth-280, menX + (t.clientX-mx)));
-  let ny=Math.max(0,Math.min(window.innerHeight-100, menY + (t.clientY-my)));
-  menu.style.left=nx+'px'; menu.style.top=ny+'px';
-},{passive:false});
+cab.addEventListener('touchstart', e=>{ moviendoMenu=true; let t=e.touches[0]; mx=t.clientX; my=t.clientY; let r=contMenu.getBoundingClientRect(); menX=r.left; menY=r.top; },{passive:false});
+cab.addEventListener('touchmove', e=>{ if(!moviendoMenu) return; e.preventDefault(); let t=e.touches[0]; contMenu.style.left=Math.max(0,Math.min(window.innerWidth-340, menX+(t.clientX-mx)))+'px'; contMenu.style.top=Math.max(0,Math.min(window.innerHeight-100, menY+(t.clientY-my)))+'px'; },{passive:false});
 cab.addEventListener('touchend', ()=>{ moviendoMenu=false; });
 </script>
 </body>
