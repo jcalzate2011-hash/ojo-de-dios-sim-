@@ -7,205 +7,204 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#000;color:#fff;font-family:Arial;overflow:hidden;height:100vh}
 
+/* BOTON FLOTANTE VERDE */
 #btnFlotante{
   position:fixed;
-  bottom:90px; right:16px;
-  width:60px; height:60px;
+  left:60px; top:250px;
+  width:62px; height:62px;
   background:#00ff88;
   color:#000;
   border:none;
   border-radius:50%;
-  font-size:26px;
+  font-size:28px;
   font-weight:900;
-  z-index:999;
-  box-shadow:0 4px 20px rgba(0,255,136,.6);
-  cursor:pointer;
+  z-index:1000;
+  box-shadow:0 0 20px rgba(0,255,136,.8);
   touch-action:none;
   user-select:none;
   -webkit-user-select:none;
-  display:none;
 }
 
-#fondo{
-  position:fixed; inset:0;
-  background:rgba(0,0,0,.6);
-  display:none;
-  z-index:998;
-}
-
+/* MENU DE FUNCIONES - FLOTANTE Y MOVIBLE */
 #menuFlotante{
   position:fixed;
-  left:16px; right:16px; bottom:30px;
+  left:60px; top:340px;
+  width:280px;
   background:#1a1a1a;
   border:1px solid #333;
   border-radius:18px;
-  padding:14px;
+  padding:12px;
   display:none;
   z-index:999;
+  touch-action:none;
+  box-shadow:0 10px 30px rgba(0,0,0,.8);
 }
-#menuFlotante h2{font-size:16px;margin-bottom:10px}
 
-.fila-esp{
+/* CABECERA PARA MOVER EL MENU */
+#cabeceraMenu{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:4px 4px 10px 4px;
+  cursor:grab;
+  touch-action:none;
+  user-select:none;
+  -webkit-user-select:none;
+}
+#cabeceraMenu:active{cursor:grabbing}
+#miniCerrar{
+  width:30px; height:30px;
+  background:#00ff88;
+  color:#000;
+  border:none;
+  border-radius:50%;
+  font-size:16px;
+  font-weight:900;
+  flex-shrink:0;
+}
+#cabeceraMenu b{font-size:15px;letter-spacing:1px}
+#cabeceraMenu span{font-size:11px;color:#888;margin-left:auto}
+
+.fila{
   display:flex;
   align-items:center;
   justify-content:space-between;
   background:#222;
   border:1px solid #444;
   border-radius:12px;
-  padding:14px;
+  padding:12px;
   margin:6px 0;
 }
-.fila-esp.activo{border-color:#00ff88;background:#123324}
-.fila-esp span{font-size:14px;font-weight:700}
-#estadoESP{font-size:12px;padding:5px 10px;border-radius:20px;background:#444;color:#fff}
-.fila-esp.activo #estadoESP{background:#00ff88;color:#000}
+.fila.activo{border-color:#00ff88;background:#123324}
+.fila span{font-size:13px;font-weight:700}
+.estado{font-size:11px;padding:4px 9px;border-radius:20px;background:#444;color:#fff;margin-top:3px;display:inline-block}
+.fila.activo .estado{background:#00ff88;color:#000}
 
-.switch{position:relative;width:52px;height:28px;background:#555;border-radius:30px;cursor:pointer;flex-shrink:0}
-.switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;background:#fff;border-radius:50%;transition:.2s}
+.switch{position:relative;width:48px;height:26px;background:#555;border-radius:30px;flex-shrink:0}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:.2s}
 .switch.on{background:#00ff88}
-.switch.on::after{left:27px}
-
-#cerrar{
-  width:100%;
-  background:#ff3333;
-  border:none;
-  color:#fff;
-  border-radius:12px;
-  padding:12px;
-  margin-top:8px;
-  font-weight:900;
-  cursor:pointer;
-}
-
-/* PANTALLA DE PERMISO */
-#pantallaPermiso{
-  position:fixed; inset:0;
-  background:#000;
-  z-index:2000;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  padding:24px;
-  text-align:center;
-}
-#pantallaPermiso h1{font-size:20px;margin-bottom:10px}
-#pantallaPermiso p{font-size:14px;color:#aaa;line-height:1.5;margin-bottom:20px}
-#btnPermiso{
-  width:100%;
-  background:#00ff88;
-  border:none;
-  color:#000;
-  border-radius:14px;
-  padding:16px;
-  font-size:16px;
-  font-weight:900;
-}
-#btnYaLoActive{
-  width:100%;
-  background:#222;
-  border:1px solid #444;
-  color:#fff;
-  border-radius:14px;
-  padding:14px;
-  margin-top:10px;
-  font-size:14px;
-}
+.switch.on::after{left:25px}
 </style>
 </head>
 <body>
 
 <button id="btnFlotante">☰</button>
 
-<div id="fondo" onclick="cerrarMenu()"></div>
-
 <div id="menuFlotante">
-  <h2>☰ MENÚ</h2>
-  <div class="fila-esp" id="filaESP" onclick="toggleESP()">
-    <div>
-      <span>ESP FOV</span><br>
-      <span id="estadoESP">OFF</span>
-    </div>
-    <div class="switch" id="switchESP"></div>
+  <!-- CABECERA MOVIBLE + MINI BOTON PARA CERRAR -->
+  <div id="cabeceraMenu">
+    <button id="miniCerrar">☰</button>
+    <b>MENÚ</b>
+    <span>↕ mover</span>
   </div>
-  <button id="cerrar" onclick="cerrarMenu()">CERRAR</button>
-</div>
 
-<!-- PANTALLA DE PERMISO AL ENTRAR -->
-<div id="pantallaPermiso">
-  <div style="font-size:50px">👁️</div>
-  <h1>Permiso necesario</h1>
-  <p>Para que el botón flotante se vea sobre otras apps, tienes que activar el permiso.<br><br>1. Dale en <b>Dar permiso</b><br>2. Busca <b>P6 King</b><br>3. Activa <b>Permitir mostrar sobre otras apps</b><br>4. Vuelve acá y dale en <b>Ya lo activé</b></p>
-  <button id="btnPermiso" onclick="pedirPermiso()">DAR PERMISO</button>
-  <button id="btnYaLoActive" onclick="entrarApp()">Ya lo activé, entrar</button>
+  <div id="contenedorOpciones"></div>
 </div>
 
 <script>
-let btn = document.getElementById('btnFlotante');
-let moviendo = false;
-let seMovio = false;
-let startX, startY, btnX, btnY;
+// LISTA DE OPCIONES - SOLO VISUAL, NO CONECTA CON NINGUN JUEGO
+const opciones = [
+  "ESP FOV",
+  "ESP LÍNEA",
+  "ESP VIDA",
+  "GHOST",
+  "UNDER MAP",
+  "AIM",
+  "CAMBIO RÁPIDO"
+];
 
-btn.addEventListener('touchstart', function(e){
-  moviendo = true; seMovio = false;
-  let t = e.touches[0];
-  startX = t.clientX; startY = t.clientY;
-  let r = btn.getBoundingClientRect();
-  btnX = r.left; btnY = r.top;
-}, {passive:false});
+let cont = document.getElementById('contenedorOpciones');
+let estados = {};
 
-btn.addEventListener('touchmove', function(e){
-  if(!moviendo) return;
-  e.preventDefault();
-  let t = e.touches[0];
-  let dx = t.clientX - startX;
-  let dy = t.clientY - startY;
-  if(Math.abs(dx) > 8 || Math.abs(dy) > 8) seMovio = true;
-  let nx = btnX + dx;
-  let ny = btnY + dy;
-  nx = Math.max(0, Math.min(window.innerWidth - 60, nx));
-  ny = Math.max(0, Math.min(window.innerHeight - 60, ny));
-  btn.style.left = nx + 'px';
-  btn.style.top = ny + 'px';
-  btn.style.right = 'auto';
-  btn.style.bottom = 'auto';
-}, {passive:false});
-
-btn.addEventListener('touchend', function(){
-  moviendo = false;
-  if(!seMovio) abrirMenu();
+opciones.forEach(nombre => {
+  estados[nombre] = false;
+  let div = document.createElement('div');
+  div.className = 'fila';
+  div.id = 'fila-' + nombre;
+  div.innerHTML = `<div><span>${nombre}</span><br><span class="estado">OFF</span></div><div class="switch"></div>`;
+  div.onclick = (e) => {
+    e.stopPropagation();
+    estados[nombre] = !estados[nombre];
+    div.classList.toggle('activo', estados[nombre]);
+    div.querySelector('.switch').classList.toggle('on', estados[nombre]);
+    div.querySelector('.estado').textContent = estados[nombre] ? 'ON' : 'OFF';
+  };
+  cont.appendChild(div);
 });
 
+let btn = document.getElementById('btnFlotante');
+let menu = document.getElementById('menuFlotante');
+let menuAbierto = false;
+
 function abrirMenu(){
-  document.getElementById('menuFlotante').style.display='block';
-  document.getElementById('fondo').style.display='block';
+  // EL MENU SE ABRE JUSTO DONDE ESTA EL BOTON
+  let r = btn.getBoundingClientRect();
+  let x = r.left;
+  let y = r.bottom + 10;
+  // Si no cabe abajo, lo abre arriba del boton
+  if(y + 420 > window.innerHeight) y = r.top - 430;
+  if(y < 10) y = 10;
+  // Si no cabe a la derecha, lo corre a la izquierda
+  if(x + 280 > window.innerWidth) x = window.innerWidth - 290;
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+  menu.style.display = 'block';
+  menuAbierto = true;
 }
 function cerrarMenu(){
-  document.getElementById('menuFlotante').style.display='none';
-  document.getElementById('fondo').style.display='none';
+  menu.style.display = 'none';
+  menuAbierto = false;
+}
+function toggleMenu(){
+  if(menuAbierto) cerrarMenu();
+  else abrirMenu();
 }
 
-let espActivo = false;
-function toggleESP(){
-  espActivo = !espActivo;
-  document.getElementById('filaESP').classList.toggle('activo', espActivo);
-  document.getElementById('switchESP').classList.toggle('on', espActivo);
-  document.getElementById('estadoESP').textContent = espActivo ? 'ON' : 'OFF';
-}
+// MINI BOTON DENTRO DEL MENU PARA CERRAR
+document.getElementById('miniCerrar').onclick = (e) => {
+  e.stopPropagation();
+  cerrarMenu();
+};
 
-function pedirPermiso(){
-  // Intenta abrir los Ajustes de Android de "Mostrar sobre otras apps"
-  // En un APK hecho con WebIntoApp esto abre la pantalla de ajustes
-  try{
-    window.location.href = "intent:#Intent;action=android.settings.action.MANAGE_OVERLAY_PERMISSION;end";
-  }catch(e){}
-  alert("Si no se abrió solo, ve a: Ajustes > Aplicaciones > P6 King > Mostrar sobre otras apps y actívalo");
-}
+// --- MOVER EL BOTON FLOTANTE ---
+let moviendoBtn=false, seMovioBtn=false, sx, sy, bx, by;
+btn.addEventListener('touchstart', e=>{
+  moviendoBtn=true; seMovioBtn=false;
+  let t=e.touches[0]; sx=t.clientX; sy=t.clientY;
+  let r=btn.getBoundingClientRect(); bx=r.left; by=r.top;
+},{passive:false});
+btn.addEventListener('touchmove', e=>{
+  if(!moviendoBtn) return;
+  e.preventDefault();
+  let t=e.touches[0];
+  let dx=t.clientX-sx, dy=t.clientY-sy;
+  if(Math.abs(dx)>8 || Math.abs(dy)>8) seMovioBtn=true;
+  let nx=Math.max(0,Math.min(window.innerWidth-62, bx+dx));
+  let ny=Math.max(0,Math.min(window.innerHeight-62, by+dy));
+  btn.style.left=nx+'px'; btn.style.top=ny+'px';
+},{passive:false});
+btn.addEventListener('touchend', ()=>{
+  moviendoBtn=false;
+  if(!seMovioBtn) toggleMenu();
+});
 
-function entrarApp(){
-  document.getElementById('pantallaPermiso').style.display='none';
-  document.getElementById('btnFlotante').style.display='block';
-}
+// --- MOVER EL MENU DE FUNCIONES ---
+let cab = document.getElementById('cabeceraMenu');
+let moviendoMenu=false, mx, my, menX, menY;
+cab.addEventListener('touchstart', e=>{
+  moviendoMenu=true;
+  let t=e.touches[0]; mx=t.clientX; my=t.clientY;
+  let r=menu.getBoundingClientRect(); menX=r.left; menY=r.top;
+},{passive:false});
+cab.addEventListener('touchmove', e=>{
+  if(!moviendoMenu) return;
+  e.preventDefault();
+  let t=e.touches[0];
+  let nx=Math.max(0,Math.min(window.innerWidth-280, menX + (t.clientX-mx)));
+  let ny=Math.max(0,Math.min(window.innerHeight-100, menY + (t.clientY-my)));
+  menu.style.left=nx+'px'; menu.style.top=ny+'px';
+},{passive:false});
+cab.addEventListener('touchend', ()=>{ moviendoMenu=false; });
 </script>
 </body>
 </html>
